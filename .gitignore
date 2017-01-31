@@ -1,3 +1,7 @@
+# Linux Executables
+client.out
+server.out
+
 # Compiled Object files
 *.slo
 *.lo
