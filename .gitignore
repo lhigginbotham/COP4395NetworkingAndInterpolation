@@ -2,6 +2,10 @@
 client.out
 server.out
 
+# Temporary Swap Files
+#.swp
+*.swo
+
 # Compiled Object files
 *.slo
 *.lo
