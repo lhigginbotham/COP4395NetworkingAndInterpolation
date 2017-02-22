@@ -1,81 +1,163 @@
-#pragma warning(disable : 4996)
+#define PLATFORM_WINDOWS  1
+#define PLATFORM_MAC      2
+#define PLATFORM_UNIX     3
+#define _WIN32_WINNT _WIN32_WINNT_VISTA
 
-#include <ctime>
-#include <iostream>
-#include <string>
-#include <boost/array.hpp>
-#include <boost/bind.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/asio.hpp>
+#if defined(_WIN32)
+#define PLATFORM PLATFORM_WINDOWS
+#elif defined(__APPLE__)
+#define PLATFORM PLATFORM_MAC
+#else
+#define PLATFORM PLATFORM_UNIX
+#endif
 
-using boost::asio::ip::udp;
+#if PLATFORM == PLATFORM_WINDOWS
 
-std::string make_daytime_string()
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <iphlpapi.h>
+
+#elif PLATFORM == PLATFORM_MAC || PLATFORM == PLATFORM_UNIX
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+
+#endif
+
+#if PLATFORM == PLATFORM_WINDOWS
+#pragma comment( lib, "wsock32.lib" )
+#pragma comment( lib, "Ws2_32.lib")
+#endif
+
+bool InitializeSockets()
 {
-	using namespace std; // For time_t, time and ctime;
-	time_t now = time(0);
-	return ctime(&now);
+#if PLATFORM == PLATFORM_WINDOWS
+	WSADATA WsaData;
+	return WSAStartup(MAKEWORD(2, 2),
+		&WsaData)
+		== NO_ERROR;
+#else
+	return true;
+#endif
 }
 
-class udp_server
+void ShutdownSockets()
 {
-public:
-	udp_server(boost::asio::io_service& io_service)
-		: socket_(io_service, udp::endpoint(udp::v4(), 13))
-	{
-		start_receive();
+#if PLATFORM == PLATFORM_WINDOWS
+	WSACleanup();
+#endif
+}
+
+#include <iostream>
+#include <string.h>
+
+#define MYPORT "4951"    // the port users will be connecting to
+
+#define MAXBUFLEN 100
+
+// get sockaddr, IPv4 or IPv6:
+void *get_in_addr(struct sockaddr *sa)
+{
+	if (sa->sa_family == AF_INET) {
+		return &(((struct sockaddr_in*)sa)->sin_addr);
 	}
 
-private:
-	void start_receive()
-	{
-		socket_.async_receive_from(
-			boost::asio::buffer(recv_buffer_), remote_endpoint_,
-			boost::bind(&udp_server::handle_receive, this,
-				boost::asio::placeholders::error,
-				boost::asio::placeholders::bytes_transferred));
+	return &(((struct sockaddr_in6*)sa)->sin6_addr);
+}
+
+int closeSocket(int sockfd)
+{
+#if PLATFORM == PLATFORM_WINDOWS
+	closesocket(sockfd);
+	return 1;
+#else
+	close(sockfd);
+	return 1;
+#endif
+}
+
+int main(void)
+{
+	int sockfd;
+	struct addrinfo hints, *servinfo, *p;
+	int rv;
+	int numbytes;
+	struct sockaddr_storage their_addr;
+	char buf[MAXBUFLEN];
+	socklen_t addr_len;
+	char s[INET6_ADDRSTRLEN];
+
+	InitializeSockets();
+
+	memset(&hints, 0, sizeof hints);
+	hints.ai_family = AF_INET; // set to AF_INET to force IPv4
+	hints.ai_socktype = SOCK_DGRAM;
+	hints.ai_flags = AI_PASSIVE; // use my IP
+
+	if ((rv = getaddrinfo(NULL, MYPORT, &hints, &servinfo)) != 0) {
+		std::cout << "getaddrinfo failed\n" << gai_strerror(rv) << "\n";
+		ShutdownSockets();
+		return 1;
 	}
 
-	void handle_receive(const boost::system::error_code& error,
-		std::size_t /*bytes_transferred*/)
-	{
-		if (!error || error == boost::asio::error::message_size)
-		{
-			boost::shared_ptr<std::string> message(
-				new std::string(make_daytime_string()));
-
-			socket_.async_send_to(boost::asio::buffer(*message), remote_endpoint_,
-				boost::bind(&udp_server::handle_send, this, message,
-					boost::asio::placeholders::error,
-					boost::asio::placeholders::bytes_transferred));
-			start_receive();
+	// loop through all the results and bind to the first we can
+	for (p = servinfo; p != NULL; p = p->ai_next) {
+		if ((sockfd = socket(p->ai_family, p->ai_socktype,
+			p->ai_protocol)) == -1) {
+			perror("listener: socket");
+			continue;
 		}
+
+		if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+			closeSocket(sockfd);
+			perror("listener: bind");
+			continue;
+		}
+
+		break;
 	}
 
-	void handle_send(boost::shared_ptr<std::string> message/*message*/,
-		const boost::system::error_code& /*error*/,
-		std::size_t /*bytes_transferred*/)
-	{
-		std::cout << "Sent: " << *message << "\n";
+	if (p == NULL) {
+		fprintf(stderr, "listener: failed to bind socket\n");
+		return 2;
 	}
 
-	udp::socket socket_;
-	udp::endpoint remote_endpoint_;
-	boost::array<char, 1> recv_buffer_;
-};
+	freeaddrinfo(servinfo);
 
-int main()
-{
-	try
-	{
-		boost::asio::io_service io_service;
-		udp_server server(io_service);
-		io_service.run();
-	}
-	catch (std::exception& e)
-	{
-		std::cerr << e.what() << std::endl;
+	printf("listener: waiting to recvfrom...\n");
+
+	addr_len = sizeof their_addr;
+	if ((numbytes = recvfrom(sockfd, buf, MAXBUFLEN - 1, 0,
+		(struct sockaddr *)&their_addr, &addr_len)) == -1) {
+		perror("recvfrom");
+		ShutdownSockets();
+		exit(1);
 	}
 
+	printf("listener: got packet from %s\n",
+		inet_ntop(their_addr.ss_family,
+			get_in_addr((struct sockaddr *)&their_addr),
+			s, sizeof s));
+	printf("listener: packet is %d bytes long\n", numbytes);
+	buf[numbytes] = '\0';
+	printf("listener: packet contains \"%s\"\n", buf);
+
+	//char buf[100] = "World";
+	//&(((struct sockaddr_in*)sa)->sin_addr)
+	//if ((numbytes = sendto(sockfd, buf, strlen(buf), 0,
+	//	p->ai_addr, p->ai_addrlen)) == -1) {
+
+	//}
+
+
+	closeSocket(sockfd);
+	ShutdownSockets();
 	return 0;
 }

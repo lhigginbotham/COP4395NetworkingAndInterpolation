@@ -1,42 +1,120 @@
-#include <iostream>
-#include <boost/array.hpp>
-#include <boost/asio.hpp>
+#define PLATFORM_WINDOWS  1
+#define PLATFORM_MAC      2
+#define PLATFORM_UNIX     3
+#define _WIN32_WINNT _WIN32_WINNT_VISTA
 
-using boost::asio::ip::udp;
+#if defined(_WIN32)
+#define PLATFORM PLATFORM_WINDOWS
+#elif defined(__APPLE__)
+#define PLATFORM PLATFORM_MAC
+#else
+#define PLATFORM PLATFORM_UNIX
+#endif
 
-int main(int argc, char* argv[])
+#if PLATFORM == PLATFORM_WINDOWS
+
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <iphlpapi.h>
+
+#elif PLATFORM == PLATFORM_MAC || PLATFORM == PLATFORM_UNIX
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+
+#endif
+
+#if PLATFORM == PLATFORM_WINDOWS
+#pragma comment( lib, "wsock32.lib" )
+#pragma comment( lib, "Ws2_32.lib")
+#endif
+
+bool InitializeSockets()
 {
-	try
-	{
-		if (argc != 2)
-		{
-			std::cerr << "Usage: client <host>" << std::endl;
-			return 1;
+#if PLATFORM == PLATFORM_WINDOWS
+	WSADATA WsaData;
+	return WSAStartup(MAKEWORD(2, 2),
+		&WsaData)
+		== NO_ERROR;
+#else
+	return true;
+#endif
+}
+
+void ShutdownSockets()
+{
+#if PLATFORM == PLATFORM_WINDOWS
+	WSACleanup();
+#endif
+}
+
+#include <iostream>
+#include <string.h>
+
+#define SERVERPORT "4951"    // the port users will be connecting to
+
+int main(int argc, char *argv[])
+{
+	int sockfd;
+	struct addrinfo hints, *servinfo, *p;
+	int rv;
+	int numbytes;
+
+	InitializeSockets();
+
+	if (argc != 3) {
+		fprintf(stderr, "usage: talker hostname message\n");
+		ShutdownSockets();
+		exit(1);
+	}
+
+	memset(&hints, 0, sizeof hints);
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_DGRAM;
+
+	if ((rv = getaddrinfo(argv[1], SERVERPORT, &hints, &servinfo)) != 0) {
+		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
+		ShutdownSockets();
+		return 1;
+	}
+
+	// loop through all the results and make a socket
+	for (p = servinfo; p != NULL; p = p->ai_next) {
+		if ((sockfd = socket(p->ai_family, p->ai_socktype,
+			p->ai_protocol)) == -1) {
+			perror("talker: socket");
+			continue;
 		}
 
-		boost::asio::io_service io_service;
-
-		udp::resolver resolver(io_service);
-		udp::resolver::query query(udp::v4(), argv[1], "daytime");
-		udp::endpoint receiver_endpoint = *resolver.resolve(query);
-
-		udp::socket socket(io_service);
-		socket.open(udp::v4());
-
-		boost::array<char, 1> send_buf = { { 0 } };
-		socket.send_to(boost::asio::buffer(send_buf), receiver_endpoint);
-
-		boost::array<char, 128> recv_buf;
-		udp::endpoint sender_endpoint;
-		size_t len = socket.receive_from(
-			boost::asio::buffer(recv_buf), sender_endpoint);
-
-		std::cout.write(recv_buf.data(), len);
+		break;
 	}
-	catch (std::exception& e)
-	{
-		std::cerr << e.what() << std::endl;
+
+	if (p == NULL) {
+		fprintf(stderr, "talker: failed to create socket\n");
+		ShutdownSockets();
+		return 2;
 	}
+
+	if ((numbytes = sendto(sockfd, argv[2], strlen(argv[2]), 0,
+		p->ai_addr, p->ai_addrlen)) == -1) {
+		perror("talker: sendto");
+		ShutdownSockets();
+		exit(1);
+	}
+
+	freeaddrinfo(servinfo);
+
+	printf("talker: sent %d bytes to %s\n", numbytes, argv[1]);
+	closesocket(sockfd);
+
+	ShutdownSockets();
 
 	return 0;
 }
