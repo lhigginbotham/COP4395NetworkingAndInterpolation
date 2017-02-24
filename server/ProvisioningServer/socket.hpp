@@ -14,6 +14,9 @@
 #define PLATFORM PLATFORM_UNIX
 #endif
 
+#include <iostream>
+#include "utility.hpp"
+
 #if PLATFORM == PLATFORM_WINDOWS
 
 #include <winsock2.h>
@@ -39,12 +42,21 @@
 #pragma comment( lib, "Ws2_32.lib")
 #endif
 
+#define MAXBUFLEN 100
+
 class Socket {
 public:
-	Socket();
+	Socket(int ai_family, int ai_socktype, int ai_flags);
 	~Socket();
 	int CloseSocket(int sockfd);
-	bool Send(int sockfd, char* message[], int length, int flag, sockaddr*ai_addr, size_t ai_addrlen);
+	int Open(char port[6]);
+	bool Send(int sockfd, char message[], int length, int flag, sockaddr*ai_addr, size_t ai_addrlen);
+	int Receive(int socketfd);
+	struct addrinfo *p;
+
+private:
+	struct addrinfo hints;
+	char buf[MAXBUFLEN];
 };
 
 #endif

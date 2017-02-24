@@ -11,5 +11,5 @@
 
 bool InitializeSockets();
 void ShutdownSockets() noexcept;
-
+void *get_in_addr(struct sockaddr *sa);
 #endif
