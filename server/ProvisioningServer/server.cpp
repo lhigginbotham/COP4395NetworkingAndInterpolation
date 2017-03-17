@@ -22,14 +22,6 @@ int main(void)
 	Socket socket(AF_INET, SOCK_DGRAM, AI_PASSIVE);
 
 	sockfd = socket.Open("4951");
-	
-	int i;
-	const char **methods = event_get_supported_methods();
-	printf("Starting Libevent %s.  Available methods are:\n",
-		event_get_version());
-	for (i = 0; methods[i] != NULL; ++i) {
-		printf("    %s\n", methods[i]);
-	}
 
 	struct event_base* base = event_base_new();
 
@@ -37,19 +29,6 @@ int main(void)
 		fprintf(stderr, "Could not initialize libevent!\n");
 		return 1;
 	}
-
-	printf("Using Libevent with backend method %s.",
-		event_base_get_method(base));
-	int f = event_base_get_features(base);
-	if ((f & EV_FEATURE_ET))
-		printf("  Edge-triggered events are supported.");
-	if ((f & EV_FEATURE_O1))
-		printf("  O(1) event notification is supported.");
-	if ((f & EV_FEATURE_FDS))
-		printf("  All FD types are supported.");
-	puts("");
-
-	
 
 	printf("listener: waiting to recvfrom...\n");
 	while (result > 0)
