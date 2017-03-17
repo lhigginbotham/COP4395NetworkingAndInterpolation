@@ -15,6 +15,8 @@
 #endif
 
 #include <iostream>
+#include <vector>
+#include <event2/util.h>
 #include "utility.hpp"
 
 #if PLATFORM == PLATFORM_WINDOWS
@@ -48,15 +50,16 @@ class Socket {
 public:
 	Socket(int ai_family, int ai_socktype, int ai_flags);
 	~Socket();
-	int CloseSocket(int sockfd);
-	int Open(char port[6]);
+	int CloseSocket(evutil_socket_t sockfd);
+	evutil_socket_t Open(char port[6]);
 	bool Send(int sockfd, char message[], int length, int flag, sockaddr*ai_addr, size_t ai_addrlen);
-	int Receive(int socketfd);
+	int Receive(evutil_socket_t socketfd);
 	struct addrinfo *p;
 
 private:
 	struct addrinfo hints;
 	char buf[MAXBUFLEN];
+	std::vector<sockaddr_storage> connections;
 };
 
 #endif

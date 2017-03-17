@@ -2,8 +2,6 @@
 
 Socket::Socket(int ai_family, int ai_socktype, int ai_flags)
 {
-	int rv;
-
 	memset(&hints, 0, sizeof hints);
 	hints.ai_family = ai_family;
 	hints.ai_socktype = ai_socktype;
@@ -16,7 +14,7 @@ Socket::~Socket()
 
 }
 
-int Socket::CloseSocket(int socketfd)
+int Socket::CloseSocket(evutil_socket_t socketfd)
 {
 #if PLATFORM == PLATFORM_WINDOWS
 	return closesocket(socketfd);
@@ -25,9 +23,10 @@ int Socket::CloseSocket(int socketfd)
 #endif
 }
 
-int Socket::Open(char port[6])
+evutil_socket_t Socket::Open(char port[6])
 {
-	int rv, sockfd;
+	int rv;
+	evutil_socket_t sockfd;
 	struct addrinfo *servinfo;
 	
 
@@ -64,7 +63,7 @@ int Socket::Open(char port[6])
 	return sockfd;
 }
 
-int Socket::Receive(int sockfd)
+int Socket::Receive(evutil_socket_t sockfd)
 {
 	char s[INET6_ADDRSTRLEN];
 	int numbytes;
@@ -86,6 +85,8 @@ int Socket::Receive(int sockfd)
 	printf("listener: packet is %d bytes long\n", numbytes);
 	buf[numbytes] = '\0';
 	printf("listener: packet contains \"%s\"\n", buf);
+
+	return 0;
 }
 
 bool Socket::Send(int sockfd, char message[], int length, int flag, sockaddr*ai_addr, size_t ai_addrlen)
