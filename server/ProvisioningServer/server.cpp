@@ -22,6 +22,7 @@ int main(void)
 	Socket socket(AF_INET, SOCK_DGRAM, AI_PASSIVE);
 
 	sockfd = socket.Open("4951");
+	evutil_make_socket_nonblocking(sockfd);
 
 	struct event_base* base = event_base_new();
 
@@ -31,6 +32,8 @@ int main(void)
 	}
 
 	printf("listener: waiting to recvfrom...\n");
+
+	
 	while (result > 0)
 	{
 		socket.Receive(sockfd);

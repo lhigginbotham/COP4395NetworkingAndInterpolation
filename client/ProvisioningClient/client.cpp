@@ -36,6 +36,8 @@
 #pragma comment( lib, "Ws2_32.lib")
 #endif
 
+#include <json.hpp>
+
 bool InitializeSockets()
 {
 #if PLATFORM == PLATFORM_WINDOWS
@@ -57,6 +59,7 @@ void ShutdownSockets()
 
 #include <iostream>
 #include <string.h>
+#include "frequency.hpp"
 
 #define SERVERPORT "4951"    // the port users will be connecting to
 
@@ -66,6 +69,7 @@ int main(int argc, char *argv[])
 	struct addrinfo hints, *servinfo, *p;
 	int rv;
 	int numbytes;
+	nlohmann::json freq;
 
 	InitializeSockets();
 
@@ -101,14 +105,17 @@ int main(int argc, char *argv[])
 		ShutdownSockets();
 		return 2;
 	}
-
-	if ((numbytes = sendto(sockfd, argv[2], strlen(argv[2]), 0,
-		p->ai_addr, p->ai_addrlen)) == -1) {
-		perror("talker: sendto");
-		ShutdownSockets();
-		exit(1);
+	while (true) {
+		freq = InitializeJson(argv[2]);
+		std::string s = freq.dump();
+		const char* spoint = s.c_str();
+		if ((numbytes = sendto(sockfd, spoint, strlen(spoint), 0,
+			p->ai_addr, p->ai_addrlen)) == -1) {
+			perror("talker: sendto");
+			ShutdownSockets();
+			exit(1);
+		}
 	}
-
 	freeaddrinfo(servinfo);
 
 	printf("talker: sent %d bytes to %s\n", numbytes, argv[1]);
