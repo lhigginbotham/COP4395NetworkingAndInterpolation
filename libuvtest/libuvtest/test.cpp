@@ -4,7 +4,7 @@
 #include <memory>
 
 static std::vector<std::string> ips;
-
+static std::vector<std::vector<nlohmann::json>> freqBuffer(10);
 
 void listen(uvw::Loop &loop) {
 	std::shared_ptr<uvw::UDPHandle> udp = loop.resource<uvw::UDPHandle>();
@@ -26,8 +26,19 @@ void listen(uvw::Loop &loop) {
 		//So, this is bizarre.  Intellisense flags this as an error when passing a standard std::string but it compiles and runs regardless
 		//Converting it to a Cstring causes Intellisense to no longer flag it
 		//Unsure what a proper fix to this would be as library dev blames it on Intellisense (and the fact that it compiles and runs regardless supports that)
-
 		nlohmann::json freq = nlohmann::json::parse(complete.c_str());
+		
+		int num = freq.value("number", 0);
+		freqBuffer[num].push_back(freq);
+		if (freqBuffer[num].size() >= freq.value("size", 0))
+		{
+			for (int i = 0; i < freq.value("size", 0); i++)
+			{
+				std::string message = freqBuffer[num][i].dump();
+				udp.send("192.188.1.77", message.c_str(), 4951);
+			}
+		}
+
 		std::cout << "Length: " << sData.length << " Sender: " << sData.sender.ip << " Data: " << complete << "\n";
 	});
 }

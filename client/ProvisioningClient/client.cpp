@@ -69,7 +69,6 @@ int main(int argc, char *argv[])
 	struct addrinfo hints, *servinfo, *p;
 	int rv;
 	int numbytes;
-	nlohmann::json freq;
 
 	InitializeSockets();
 
@@ -107,11 +106,21 @@ int main(int argc, char *argv[])
 	}
 
 	std::default_random_engine generator;
-
+	unsigned long int i = 0;
+	int num = 0;
 	while (true) {
-		freq = Message(argv[2], generator);
+		//Use this to slow down output for testing, ugly but works
+		if (i < 100000000)
+		{
+			i++;
+			continue;
+		}
+		if (num > 10)
+			num = 0;
+		std::string t = Message(argv[2], generator, num);
+		nlohmann::json freq = nlohmann::json::parse(t.c_str());
 		std::string s = freq.dump();
-		std::cout << s << "\n";
+		std::cout << "Out: " << freq.dump() << "\n";
 		const char* spoint = s.c_str();
 		if ((numbytes = sendto(sockfd, spoint, strlen(spoint), 0,
 			p->ai_addr, p->ai_addrlen)) == -1) {
@@ -119,6 +128,8 @@ int main(int argc, char *argv[])
 			ShutdownSockets();
 			exit(1);
 		}
+		i = 0;
+		num++;
 	}
 	freeaddrinfo(servinfo);
 

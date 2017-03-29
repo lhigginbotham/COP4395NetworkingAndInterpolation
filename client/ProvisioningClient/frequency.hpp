@@ -9,6 +9,6 @@
 #include <random>
 
 nlohmann::json InitializeJson(std::string input, std::default_random_engine generator);
-nlohmann::json Message(std::string input, std::default_random_engine generator);
+std::string Message(std::string input, std::default_random_engine generator, int number);
 
 #endif
