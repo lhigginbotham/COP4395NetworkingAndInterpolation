@@ -105,9 +105,13 @@ int main(int argc, char *argv[])
 		ShutdownSockets();
 		return 2;
 	}
+
+	std::default_random_engine generator;
+
 	while (true) {
-		freq = InitializeJson(argv[2]);
+		freq = Message(argv[2], generator);
 		std::string s = freq.dump();
+		std::cout << s << "\n";
 		const char* spoint = s.c_str();
 		if ((numbytes = sendto(sockfd, spoint, strlen(spoint), 0,
 			p->ai_addr, p->ai_addrlen)) == -1) {

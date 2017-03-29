@@ -3,6 +3,8 @@
 #include <iostream>
 #include <memory>
 
+static std::vector<std::string> ips;
+
 
 void listen(uvw::Loop &loop) {
 	std::shared_ptr<uvw::UDPHandle> udp = loop.resource<uvw::UDPHandle>();
@@ -15,8 +17,7 @@ void listen(uvw::Loop &loop) {
 
 	udp->on<uvw::UDPDataEvent>([](const uvw::UDPDataEvent &sData, uvw::UDPHandle &udp) {
 		int test = 3;
-		std::vector<std::string> ips = { "0" };
-		if (!std::any_of(ips.begin(), ips.end(), sData.sender.ip))
+		if (std::find(ips.begin(), ips.end(), sData.sender.ip) == ips.end())
 		{
 			ips.push_back(sData.sender.ip);
 		}
@@ -27,6 +28,7 @@ void listen(uvw::Loop &loop) {
 		//Unsure what a proper fix to this would be as library dev blames it on Intellisense (and the fact that it compiles and runs regardless supports that)
 
 		nlohmann::json freq = nlohmann::json::parse(complete.c_str());
+		
 		//auto result2 = sData.data;
 		std::cout << "Length: " << sData.length << " Sender: " << sData.sender.ip << " Data: " << complete << "\n";
 	});

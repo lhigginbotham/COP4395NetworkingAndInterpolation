@@ -8,6 +8,7 @@
 #include <ctime>
 #include <random>
 
-nlohmann::json InitializeJson(std::string input);
+nlohmann::json InitializeJson(std::string input, std::default_random_engine generator);
+nlohmann::json Message(std::string input, std::default_random_engine generator);
 
 #endif
