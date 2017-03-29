@@ -28,8 +28,6 @@ void listen(uvw::Loop &loop) {
 		//Unsure what a proper fix to this would be as library dev blames it on Intellisense (and the fact that it compiles and runs regardless supports that)
 
 		nlohmann::json freq = nlohmann::json::parse(complete.c_str());
-		
-		//auto result2 = sData.data;
 		std::cout << "Length: " << sData.length << " Sender: " << sData.sender.ip << " Data: " << complete << "\n";
 	});
 }
@@ -38,4 +36,5 @@ int main() {
 	auto loop = uvw::Loop::getDefault();
 	listen(*loop);
 	loop->run();
+	return 0;
 }

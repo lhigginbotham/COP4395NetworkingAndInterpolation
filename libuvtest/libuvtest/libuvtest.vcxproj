@@ -75,10 +75,10 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>C:\Users\Lucas\Documents\Development\C++\include;C:\Users\Lucas\Documents\Development\C++\libuv-1.11.0\src;C:\Users\Lucas\Documents\Development\C++\libuv-1.11.0\include;C:\Users\Lucas\Documents\Development\C++\uvw-master\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Lucas\Documents\C++\libuv-1.11.0\include;C:\Users\Lucas\Documents\C++\uvw-master\src;C:\Users\Lucas\Documents\C++\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>advapi32.lib;iphlpapi.lib;psapi.lib;shell32.lib;user32.lib;userenv.lib;ws2_32.lib;C:\Users\Lucas\Documents\Development\C++\libuv-1.11.0\Debug\lib\libuv.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>advapi32.lib;iphlpapi.lib;psapi.lib;shell32.lib;user32.lib;userenv.lib;ws2_32.lib;C:\Users\Lucas\Documents\C++\libuv-1.11.0\Debug\lib\libuv.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -86,7 +86,11 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>C:\Users\Lucas\Documents\C++\libuv-1.11.0\include;C:\Users\Lucas\Documents\C++\uvw-master\src;C:\Users\Lucas\Documents\C++\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
+    <Link>
+      <AdditionalDependencies>advapi32.lib;iphlpapi.lib;psapi.lib;shell32.lib;user32.lib;userenv.lib;ws2_32.lib;C:\Users\Lucas\Documents\C++\libuv-1.11.0\Debug\lib\libuv.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
