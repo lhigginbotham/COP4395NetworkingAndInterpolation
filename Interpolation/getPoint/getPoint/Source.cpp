@@ -7,38 +7,38 @@
 using namespace std;
 
 
-struct Point
+struct MeasuredPoint
 {
-	double x, y;
+	double x, y, measuredStrength;
 
 };
-std::vector <Point> estimatedPoints;
 
 
-//needed for  sorting points with referenceto  the first point 
-Point p0;
+
+//needed for  sorting MeasuredPoints with referenceto  the first MeasuredPoint 
+MeasuredPoint p0;
 
 // A utility function to find next to top in a stack
-Point nextToTop(stack<Point> &S)
+MeasuredPoint nextToTop(stack<MeasuredPoint> &S)
 {
-	Point p = S.top();
+	MeasuredPoint p = S.top();
 	S.pop();
-	Point res = S.top();
+	MeasuredPoint res = S.top();
 	S.push(p);
 	return res;
 }
 
-// A utility function to swap two points
-void swap(Point &p1, Point &p2)
+// A utility function to swap two MeasuredPoints
+void swap(MeasuredPoint &p1, MeasuredPoint &p2)
 {
-	Point temp = p1;
+	MeasuredPoint temp = p1;
 	p1 = p2;
-	p2 = temp; 
+	p2 = temp;
 }
 
 // A utility function to return square of distance
 // between p1 and p2
-double distSq(Point p1, Point p2)
+double distSq(MeasuredPoint p1, MeasuredPoint p2)
 {
 	return (p1.x - p2.x)*(p1.x - p2.x) +
 		(p1.y - p2.y)*(p1.y - p2.y);
@@ -49,7 +49,7 @@ double distSq(Point p1, Point p2)
 // 0 --> p, q and r are colinear
 // 1 --> Clockwise
 // 2 --> Counterclockwise
-int orientation(Point p, Point q, Point r)
+int orientation(MeasuredPoint p, MeasuredPoint q, MeasuredPoint r)
 {
 	double val = (q.y - p.y) * (r.x - q.x) -
 		(q.x - p.x) * (r.y - q.y);
@@ -59,11 +59,11 @@ int orientation(Point p, Point q, Point r)
 }
 
 // A function used by library function qsort() to sort an array of
-// points with respect to the first point
+// MeasuredPoints with respect to the first MeasuredPoint
 int compare(const void *vp1, const void *vp2)
 {
-	Point *p1 = (Point *)vp1;
-	Point *p2 = (Point *)vp2;
+	MeasuredPoint *p1 = (MeasuredPoint *)vp1;
+	MeasuredPoint *p2 = (MeasuredPoint *)vp2;
 
 	// Find orientation
 	int o = orientation(p0, *p1, *p2);
@@ -73,77 +73,77 @@ int compare(const void *vp1, const void *vp2)
 	return (o == 2) ? -1 : 1;
 }
 
-// Prints convex hull of a set of n points.
-std::vector<Point> convexHull(std::vector<Point> points, int n)
+// Prints convex hull of a set of n MeasuredPoints.
+std::vector<MeasuredPoint> convexHull(std::vector<MeasuredPoint> MeasuredPoints, int n)
 {
-	std::vector <Point> output;
-	// Find the bottommost point
-	double ymin = points[0].y, min = 0;
+	std::vector <MeasuredPoint> output;
+	// Find the bottommost MeasuredPoint
+	double ymin = MeasuredPoints[0].y, min = 0;
 	for (int i = 1; i < n; i++)
 	{
-		double y = points[i].y;
+		double y = MeasuredPoints[i].y;
 
 		// Pick the bottom-most or chose the left
-		// most point in case of tie
+		// most MeasuredPoint in case of tie
 		if ((y < ymin) || (ymin == y &&
-			points[i].x < points[min].x))
-			ymin = points[i].y, min = i;
+			MeasuredPoints[i].x < MeasuredPoints[min].x))
+			ymin = MeasuredPoints[i].y, min = i;
 	}
 
-	// Place the bottom-most point at first position
-	swap(points[0], points[min]);
+	// Place the bottom-most MeasuredPoint at first position
+	swap(MeasuredPoints[0], MeasuredPoints[min]);
 
-	// Sort n-1 points with respect to the first point.
-	// A point p1 comes before p2 in sorted ouput if p2
+	// Sort n-1 MeasuredPoints with respect to the first MeasuredPoint.
+	// A MeasuredPoint p1 comes before p2 in sorted ouput if p2
 	// has larger polar angle (in counterclockwise
 	// direction) than p1
-	p0 = points[0];
-	qsort(&points[1], n - 1, sizeof(Point), compare);
+	p0 = MeasuredPoints[0];
+	qsort(&MeasuredPoints[1], n - 1, sizeof(MeasuredPoint), compare);
 
-	// If two or more points make same angle with p0,
+	// If two or more MeasuredPoints make same angle with p0,
 	// Remove all but the one that is farthest from p0
 	// Remember that, in above sorting, our criteria was
-	// to keep the farthest point at the end when more than
-	// one points have same angle.
+	// to keep the farthest MeasuredPoint at the end when more than
+	// one MeasuredPoints have same angle.
 	int m = 1; // Initialize size of modified array
 	for (int i = 1; i<n; i++)
 	{
 		// Keep removing i while angle of i and i+1 is same
 		// with respect to p0
-		while (i < n - 1 && orientation(p0, points[i],
-			points[i + 1]) == 0)
+		while (i < n - 1 && orientation(p0, MeasuredPoints[i],
+			MeasuredPoints[i + 1]) == 0)
 			i++;
 
 
-		points[m] = points[i];
+		MeasuredPoints[m] = MeasuredPoints[i];
 		m++;  // Update size of modified array
 	}
 
 
 
 
-	// Create an empty stack and push first three points
+	// Create an empty stack and push first three MeasuredPoints
 	// to it.
-	stack<Point> S;
-	S.push(points[0]);
-	S.push(points[1]);
-	S.push(points[2]);
+	stack<MeasuredPoint> S;
+	S.push(MeasuredPoints[0]);
+	S.push(MeasuredPoints[1]);
+	S.push(MeasuredPoints[2]);
 
-	// Process remaining n-3 points
+	// Process remaining n-3 MeasuredPoints
 	for (int i = 3; i < m; i++)
 	{
 		// Keep removing top while the angle formed by
-		// points next-to-top, top, and points[i] makes
+		// MeasuredPoints next-to-top, top, and MeasuredPoints[i] makes
 		// a non-left turn
-		while (orientation(nextToTop(S), S.top(), points[i]) != 2)
+		while (orientation(nextToTop(S), S.top(), MeasuredPoints[i]) != 2)
 			S.pop();
-		S.push(points[i]);
+		S.push(MeasuredPoints[i]);
 	}
 	int a = 0;
-	// Now stack has the output points, print contents of stack
+	// Now stack has the output MeasuredPoints, print contents of stack
 	while (!S.empty())
 	{
-		Point p = S.top();
+		MeasuredPoint p = S.top();
 
 		output.push_back(p);
 
@@ -159,9 +159,9 @@ std::vector<Point> convexHull(std::vector<Point> points, int n)
 
 
 
-// Given three colinear points p, q, r, the function checks if
-// point q lies on line segment 'pr'
-bool onSegment(Point p, Point q, Point r)
+// Given three colinear MeasuredPoints p, q, r, the function checks if
+// MeasuredPoint q lies on line segment 'pr'
+bool onSegment(MeasuredPoint p, MeasuredPoint q, MeasuredPoint r)
 {
 	if (q.x <= std::max(p.x, r.x) && q.x >= std::min(p.x, r.x) &&
 		q.y <= max(p.y, r.y) && q.y >= min(p.y, r.y))
@@ -173,7 +173,7 @@ bool onSegment(Point p, Point q, Point r)
 
 // The function that returns true if line segment 'p1q1'
 // and 'p2q2' intersect.
-bool doIntersect(Point p1, Point q1, Point p2, Point q2)
+bool doIntersect(MeasuredPoint p1, MeasuredPoint q1, MeasuredPoint p2, MeasuredPoint q2)
 {
 	// Find the four orientations needed for general and
 	// special cases
@@ -202,14 +202,14 @@ bool doIntersect(Point p1, Point q1, Point p2, Point q2)
 	return false; // Doesn't fall in any of the above cases
 }
 
-// Returns true if the point p lies inside the polygon[] with n vertices
-bool isInside(std::vector<Point> polygon, int n, Point p)
+// Returns true if the MeasuredPoint p lies inside the polygon[] with n vertices
+bool isInside(std::vector<MeasuredPoint> polygon, int n, MeasuredPoint p)
 {
 	// There must be at least 3 vertices in polygon[]
 	if (n < 3)  return false;
 
-	// Create a point for line segment from p to infinite
-	Point extreme = { INF, p.y };
+	// Create a MeasuredPoint for line segment from p to infinite
+	MeasuredPoint extreme = { INF, p.y };
 
 	// Count intersections of the above line with sides of polygon
 	int count = 0, i = 0;
@@ -221,7 +221,7 @@ bool isInside(std::vector<Point> polygon, int n, Point p)
 		// with the line segment from 'polygon[i]' to 'polygon[next]'
 		if (doIntersect(polygon[i], polygon[next], p, extreme))
 		{
-			// If the point 'p' is colinear with line segment 'i-next',
+			// If the MeasuredPoint 'p' is colinear with line segment 'i-next',
 			// then check if it lies on segment. If it lies, return true,
 			// otherwise false
 			if (orientation(polygon[i], p, polygon[next]) == 0)
@@ -244,21 +244,21 @@ bool isInside(std::vector<Point> polygon, int n, Point p)
 
 
 
-Point getCenter(std::vector<Point> points)
+MeasuredPoint getCenter(std::vector<MeasuredPoint> MeasuredPoints)
 {
-	Point center;
+	MeasuredPoint center;
 	double xtotal = 0;
 	double ytotal = 0;
 	double masstotal = 0;
 	int i;
-	for (i = 0; i<points.size(); i++)
+	for (i = 0; i<MeasuredPoints.size(); i++)
 	{
-		xtotal += points[i].x;
-		ytotal += points[i].y;
+		xtotal += MeasuredPoints[i].x;
+		ytotal += MeasuredPoints[i].y;
 
 	}
-	masstotal = points.size();
-		//cout << masstotal <<"\n";
+	masstotal = MeasuredPoints.size();
+	//cout << masstotal <<"\n";
 	center.x = xtotal / masstotal;
 	center.y = ytotal / masstotal;
 
@@ -268,12 +268,12 @@ Point getCenter(std::vector<Point> points)
 }
 
 
-void floodFill(Point current, double interval, std::vector<Point> sensorLoc)
+std::vector <MeasuredPoint>  floodFill(MeasuredPoint current, double interval, std::vector<MeasuredPoint> sensorLoc, std::vector <MeasuredPoint> estimatedPoints)
 {
 	//cout << "checking (" << current.x << "," << current.y << ") ... ";
 	unsigned int i;
 	bool visited = false;
-	
+
 	for (i = 0; i<estimatedPoints.size(); i++)
 	{
 		if (estimatedPoints.at(i).x == current.x && estimatedPoints.at(i).y == current.y)
@@ -290,27 +290,27 @@ void floodFill(Point current, double interval, std::vector<Point> sensorLoc)
 	else
 	{
 		//cout << "Failed!\n";
-		return;
+		return estimatedPoints;
 	}
 	//up
-	Point p;
+	MeasuredPoint p;
 	p = current;
 	p.y = p.y + interval;
-	floodFill(p, interval, sensorLoc);
+	estimatedPoints = floodFill(p, interval, sensorLoc, estimatedPoints);
 	//right
 	p = current;
 	p.x = p.x + interval;
-	floodFill(p, interval, sensorLoc);
+	estimatedPoints = floodFill(p, interval, sensorLoc, estimatedPoints);
 
 	//left
 	p = current;
 	p.x = p.x - interval;
-	floodFill(p, interval, sensorLoc);
+	estimatedPoints = floodFill(p, interval, sensorLoc, estimatedPoints);
 	//down
 	p = current;
 	p.y = p.y - interval;
-	floodFill(p, interval, sensorLoc);
-	return;
+	estimatedPoints = floodFill(p, interval, sensorLoc, estimatedPoints);
+	return estimatedPoints;
 }
 
 
@@ -319,29 +319,38 @@ void floodFill(Point current, double interval, std::vector<Point> sensorLoc)
 
 
 
-//name get points later
+//name get MeasuredPoints later
 int main()
 {
-
-	std::vector<Point> points = { { 28.600367,-81.198041 } ,{ 28.600693, -81.198229 } ,{ 28.600893, -81.197376 } ,{ 28.600700, -81.197134 } };
-	//std::vector<Point> points = { { 0,0 } ,{ 0, 10 } ,{ 10, 10} ,{ 10, 0 } };
-	Point center = getCenter(points);
-	//cout << "(" << std::fixed<< center.x << "," << center.y << ")\n\n";
-
-
-
-
-	double interval = .0005;
-	floodFill(center, interval, points);
 	unsigned int i;
+	int x;
+
+	std::vector<MeasuredPoint> sensors = { { 28.600367,-81.198041, 60.0 } ,{ 28.600693, -81.198229, 35.0 } ,{ 28.600893, -81.197376, 45.0 } ,{ 28.600700, -81.197134, 22.0 } };
+
+	std::vector <MeasuredPoint> estimatedPoints;
+	std::vector<MeasuredPoint> polygon = convexHull(sensors, sensors.size());
+	MeasuredPoint center = getCenter(polygon);
+	cout << "(" << std::fixed << center.x << "," << center.y << ")\n\n";
+	double interval = .0005;
+	estimatedPoints = floodFill(center, interval, sensors, estimatedPoints);
+
 	for (i = 0; i<estimatedPoints.size(); i++)
 	{
-		estimatedPoints.at(i).x = estimatedPoints.at(i).x ;
-		estimatedPoints.at(i).y = estimatedPoints.at(i).y ;
+
 		cout << "(" << std::fixed << estimatedPoints.at(i).x << "," << estimatedPoints.at(i).y << ")\n";
 	}
-	//wait for input so the command prompt doesn't close
-	int x;
+
 	cin >> x;
+
+
+
+
+
+
+
 	return 0;
 }
+
+
+
+
