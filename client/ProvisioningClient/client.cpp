@@ -117,16 +117,19 @@ int main(int argc, char *argv[])
 		}
 		if (num > 10)
 			num = 0;
-		std::string t = Message(argv[2], generator, num);
-		nlohmann::json freq = nlohmann::json::parse(t.c_str());
-		std::string s = freq.dump();
-		std::cout << "Out: " << freq.dump() << "\n";
-		const char* spoint = s.c_str();
-		if ((numbytes = sendto(sockfd, spoint, strlen(spoint), 0,
-			p->ai_addr, p->ai_addrlen)) == -1) {
-			perror("talker: sendto");
-			ShutdownSockets();
-			exit(1);
+		for (int i = 0; i < 3; i++)
+		{
+			std::string t = Message(argv[2], generator, num);
+			nlohmann::json freq = nlohmann::json::parse(t.c_str());
+			std::string s = freq.dump();
+			std::cout << "Out: " << freq.dump() << "\n";
+			const char* spoint = s.c_str();
+			if ((numbytes = sendto(sockfd, spoint, strlen(spoint), 0,
+				p->ai_addr, p->ai_addrlen)) == -1) {
+				perror("talker: sendto");
+				ShutdownSockets();
+				exit(1);
+			}
 		}
 		i = 0;
 		num++;
