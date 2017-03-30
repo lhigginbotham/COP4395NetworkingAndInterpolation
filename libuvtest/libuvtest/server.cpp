@@ -5,6 +5,8 @@
 #include <iostream>
 #include <memory>
 
+#include "config.hpp"
+
 static std::map<std::string, int> ips;
 static std::vector<std::vector<std::vector<nlohmann::json>>> freqBuffer (10, std::vector<std::vector<nlohmann::json>>(0, std::vector<nlohmann::json> (0)));
 
@@ -57,6 +59,7 @@ void listen(uvw::Loop &loop) {
 }
 
 int main() {
+	InitializeConfig();
 	auto loop = uvw::Loop::getDefault();
 	listen(*loop);
 	loop->run();
