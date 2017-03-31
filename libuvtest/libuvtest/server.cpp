@@ -9,6 +9,7 @@
 
 static std::map<std::string, int> ips;
 static std::vector<std::vector<std::vector<nlohmann::json>>> freqBuffer (10, std::vector<std::vector<nlohmann::json>>(0, std::vector<nlohmann::json> (0)));
+static const ConfigStore globalConfig ("config.log");
 
 void listen(uvw::Loop &loop) {
 	std::shared_ptr<uvw::UDPHandle> udp = loop.resource<uvw::UDPHandle>();
@@ -21,6 +22,7 @@ void listen(uvw::Loop &loop) {
 
 	udp->on<uvw::UDPDataEvent>([](const uvw::UDPDataEvent &sData, uvw::UDPHandle &udp) {
 		std::string result = sData.data.get();
+		//Trim off excess data transmitted from client
 		std::string complete = result.substr(0, sData.length);
 		//So, this is bizarre.  Intellisense flags this as an error when passing a standard std::string but it compiles and runs regardless
 		//Converting it to a Cstring causes Intellisense to no longer flag it
@@ -42,7 +44,7 @@ void listen(uvw::Loop &loop) {
 			{
 				std::string message = freqBuffer[num][ipPosition][i].dump();
 				uvw::Addr addr;
-				std::string ip = "127.0.0.1";
+				std::string ip = globalConfig.config.value("sendip", "-1");
 				unsigned int port = 4951;
 				char* data = new char[message.length() + 1];
 				std::strcpy(data, message.c_str());
@@ -59,7 +61,6 @@ void listen(uvw::Loop &loop) {
 }
 
 int main() {
-	InitializeConfig();
 	auto loop = uvw::Loop::getDefault();
 	listen(*loop);
 	loop->run();
