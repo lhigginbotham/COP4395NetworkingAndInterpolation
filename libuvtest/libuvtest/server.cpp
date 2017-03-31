@@ -22,6 +22,7 @@ void listen(uvw::Loop &loop) {
 
 	udp->on<uvw::UDPDataEvent>([](const uvw::UDPDataEvent &sData, uvw::UDPHandle &udp) {
 		std::string result = sData.data.get();
+		bool transmitBuffer = false;
 		//Trim off excess data transmitted from client
 		std::string complete = result.substr(0, sData.length);
 		//So, this is bizarre.  Intellisense flags this as an error when passing a standard std::string but it compiles and runs regardless
@@ -35,25 +36,45 @@ void listen(uvw::Loop &loop) {
 			ips.emplace(sData.sender.ip, ips.size());
 			freqBuffer[num].push_back(std::vector<nlohmann::json>());
 		}
-		
-		freqBuffer[num][ips.find(sData.sender.ip)->second].push_back(freq);
+
 		int ipPosition = ips.find(sData.sender.ip)->second;
+		freqBuffer[num][ipPosition].push_back(freq);
+
+		int vFullTracker = 0;
 		if (freqBuffer[num][ipPosition].size() >= freq.value("size", 0))
 		{
-			for (int i = 0; i < freq.value("size", 0); i++)
+			for (auto &&i : freqBuffer[num])
 			{
-				std::string message = freqBuffer[num][ipPosition][i].dump();
-				uvw::Addr addr;
-				std::string ip = globalConfig.config.value("sendip", "-1");
-				unsigned int port = 4951;
-				char* data = new char[message.length() + 1];
-				std::strcpy(data, message.c_str());
-				unsigned int len = message.length();
-				udp.send(ip, port, data, len);
-				delete[] data;
+				if (i.size() >= freq.value("size", 0))
+				{
+					vFullTracker++;
+				}
 			}
-			freqBuffer[num][ipPosition].resize(0);
-			freqBuffer[num][ipPosition].shrink_to_fit();
+			if (vFullTracker >= ips.size())
+			{
+				transmitBuffer = true;
+			}
+		}
+		if (transmitBuffer)
+		{
+			for (int i = 0; i < ips.size(); i++)
+			{
+				for (int j = 0; j < freq.value("size", 0); j++)
+				{
+					std::string message = freqBuffer[num][i][j].dump();
+					uvw::Addr addr;
+					std::string ip = globalConfig.config.value("sendip", "-1");
+					unsigned int port = 4951;
+					char* data = new char[message.length() + 1];
+					std::strcpy(data, message.c_str());
+					unsigned int len = message.length();
+					udp.send(ip, port, data, len);
+					delete[] data;
+				}
+				freqBuffer[num][i].resize(0);
+				freqBuffer[num][i].shrink_to_fit();
+			}
+			
 		}
 
 		std::cout << "Length: " << sData.length << " Sender: " << sData.sender.ip << " Data: " << complete << "\n";
