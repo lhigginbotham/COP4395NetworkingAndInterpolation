@@ -77,13 +77,26 @@ void listen(uvw::Loop &loop) {
 			
 		}
 
-		std::cout << "Length: " << sData.length << " Sender: " << sData.sender.ip << " Data: " << complete << "\n";
+		//std::cout << "Length: " << sData.length << " Sender: " << sData.sender.ip << " Data: " << complete << "\n";
 	});
+}
+
+void timer(uvw::Loop &loop)
+{
+	auto timer = loop.resource<uvw::TimerHandle>();
+	std::chrono::milliseconds duration(2000);
+	timer->start(duration, duration);
+
+	timer->on<uvw::TimerEvent>([](const uvw::TimerEvent &, uvw::TimerHandle &timer) {
+		std::cout << "In timer \n";
+	});
+	
 }
 
 int main() {
 	auto loop = uvw::Loop::getDefault();
 	listen(*loop);
+	timer(*loop);
 	loop->run();
 	return 0;
 }
