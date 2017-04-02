@@ -36,12 +36,15 @@ void listen(uvw::Loop &loop) {
 			ips.emplace(sData.sender.ip, ips.size());
 			freqBuffer[num].push_back(std::vector<nlohmann::json>());
 		}
-
+		if (freqBuffer[num].size() != ips.size())
+		{
+			freqBuffer[num].resize(ips.size());//This may break existing iterators so watch out for that
+		}
 		int ipPosition = ips.find(sData.sender.ip)->second;
 		freqBuffer[num][ipPosition].push_back(freq);
 
 		int vFullTracker = 0;
-		if (freqBuffer[num][ipPosition].size() >= freq.value("size", 0))
+		if (freqBuffer[num][ipPosition].size() >= ips.size())
 		{
 			for (auto &&i : freqBuffer[num])
 			{
@@ -65,6 +68,7 @@ void listen(uvw::Loop &loop) {
 					uvw::Addr addr;
 					std::string ip = globalConfig.config.value("sendip", "-1");
 					unsigned int port = 4951;
+					//Send won't take message.c_str()
 					char* data = new char[message.length() + 1];
 					std::strcpy(data, message.c_str());
 					unsigned int len = message.length();
@@ -77,7 +81,7 @@ void listen(uvw::Loop &loop) {
 			
 		}
 
-		//std::cout << "Length: " << sData.length << " Sender: " << sData.sender.ip << " Data: " << complete << "\n";
+		std::cout << "Length: " << sData.length << " Sender: " << sData.sender.ip << " Data: " << complete << "\n";
 	});
 }
 
