@@ -5,10 +5,11 @@
 
 #include <json.hpp>
 #include <iomanip>
+#include <chrono>
 #include <ctime>
 #include <random>
 
-nlohmann::json InitializeJson(std::string input, std::default_random_engine generator);
-std::string Message(std::string input, std::default_random_engine generator, int number);
+nlohmann::json InitializeJson(std::string input, std::default_random_engine generator, const std::time_t &time);
+std::string Message(std::string input, std::default_random_engine generator, int number, const std::chrono::time_point<std::chrono::system_clock> &time);
 
 #endif

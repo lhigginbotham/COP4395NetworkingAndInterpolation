@@ -1,24 +1,26 @@
 
 #include "frequency.hpp"
 
-nlohmann::json InitializeJson(std::string input, std::default_random_engine generator)
+nlohmann::json InitializeJson(std::string input, std::default_random_engine generator, const std::time_t &time)
 {
 	nlohmann::json freq;
-	auto t = std::time(nullptr);
-	auto tm = *std::localtime(&t); //localtime is not thread safe
-	std::string time = "2017-12-03T12:00:00";// + tm.tm_mon; + "-" + tm.tm_mday + "T" + tm.tm_hour + ":" + tm.tm_min + ":" + tm.tm_sec;
+	tm *ltm = std::localtime(&time); //localtime is not thread safe
+	std::string sTime = std::to_string(1900 + ltm->tm_year) + "-" + std::to_string(ltm->tm_mon) + "-" + std::to_string(ltm->tm_mday)
+		+ "T" + std::to_string(ltm->tm_hour) + ":" + std::to_string(ltm->tm_min) + ":" + std::to_string(ltm->tm_sec);
+	
 	std::uniform_int_distribution<int> distribution(900, 1000);
 
 	freq["sensor-id"] = input;
 	freq["frequency"] = 900 + rand() % 100;
-	freq["time"] = time;
+	freq["time"] = sTime;
 	freq["reading"] = -75;
 	
 	return freq;
 }
 
-std::string Message(std::string input, std::default_random_engine generator, int number)
+std::string Message(std::string input, std::default_random_engine generator, int number, const std::chrono::time_point<std::chrono::system_clock> &time)
 {
+	std::time_t tTime = std::chrono::system_clock::to_time_t(time);
 	nlohmann::json message;
 	message["number"] = number;
 	message["size"] = 3;
@@ -26,7 +28,7 @@ std::string Message(std::string input, std::default_random_engine generator, int
 	std::vector<nlohmann::json> freqs;
 	for (int i = 0; i < 5; i++)
 	{
-		freqs.push_back(InitializeJson(input, generator));
+		freqs.push_back(InitializeJson(input, generator, tTime));
 	}
 	nlohmann::json j_vec(freqs);	
 	message["freqs"] = j_vec;
