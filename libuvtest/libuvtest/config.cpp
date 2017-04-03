@@ -1,6 +1,6 @@
 #include "config.hpp"
 
-ConfigStore::ConfigStore(std::string fileName)
+ConfigStore::ConfigStore(const std::string fileName)
 {
 	std::string configSerial = ParseFile(fileName);
 
@@ -14,7 +14,7 @@ ConfigStore::ConfigStore(std::string fileName)
 }
 
 
-std::string ConfigStore::ParseFile(std::string fileName)
+std::string ConfigStore::ParseFile(const std::string fileName)
 {
 	std::ifstream configFile;
 	std::string config;

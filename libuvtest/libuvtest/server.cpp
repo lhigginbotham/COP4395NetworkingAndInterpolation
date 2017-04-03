@@ -7,7 +7,6 @@
 
 #include "config.hpp"
 
-static std::map<std::string, int> ips;
 static std::vector<std::vector<std::vector<nlohmann::json>>> freqBuffer (10, std::vector<std::vector<nlohmann::json>>(0, std::vector<nlohmann::json> (0)));
 static const ConfigStore globalConfig ("config.log");
 
@@ -15,12 +14,12 @@ void listen(uvw::Loop &loop) {
 	std::shared_ptr<uvw::UDPHandle> udp = loop.resource<uvw::UDPHandle>();
 	udp->bind("127.0.0.1", 4951);
 	udp->recv();
-
+	std::map<std::string, int> ips;
 	udp->on<uvw::ErrorEvent>([](const uvw::ErrorEvent &err, uvw::UDPHandle &) {
 		std::cout << "Code: " << err.code() << " Message: " << err.what() << "\n";
 	});
 
-	udp->on<uvw::UDPDataEvent>([](const uvw::UDPDataEvent &sData, uvw::UDPHandle &udp) {
+	udp->on<uvw::UDPDataEvent>([&ips](const uvw::UDPDataEvent &sData, uvw::UDPHandle &udp) {
 		std::string result = sData.data.get();
 		bool transmitBuffer = false;
 		//Trim off excess data transmitted from client
@@ -29,24 +28,24 @@ void listen(uvw::Loop &loop) {
 		//Converting it to a Cstring causes Intellisense to no longer flag it
 		//Unsure what a proper fix to this would be as library dev blames it on Intellisense (and the fact that it compiles and runs regardless supports that)
 		nlohmann::json freq = nlohmann::json::parse(complete.c_str());
-		int num = freq.value("number", 0);
+		int cPosition = freq.value("number", 0);
 
 		if (ips.find(sData.sender.ip) == ips.end())
 		{
 			ips.emplace(sData.sender.ip, ips.size());
-			freqBuffer[num].push_back(std::vector<nlohmann::json>());
+			freqBuffer[cPosition].push_back(std::vector<nlohmann::json>());
 		}
-		if (freqBuffer[num].size() != ips.size())
+		if (freqBuffer[cPosition].size() != ips.size())
 		{
-			freqBuffer[num].resize(ips.size());//This may break existing iterators so watch out for that
+			freqBuffer[cPosition].resize(ips.size());//This may break existing iterators so watch out for that
 		}
 		int ipPosition = ips.find(sData.sender.ip)->second;
-		freqBuffer[num][ipPosition].push_back(freq);
+		freqBuffer[cPosition][ipPosition].push_back(freq);
 
 		int vFullTracker = 0;
-		if (freqBuffer[num][ipPosition].size() >= ips.size())
+		if (freqBuffer[cPosition][ipPosition].size() >= ips.size())
 		{
-			for (auto &&i : freqBuffer[num])
+			for (auto &&i : freqBuffer[cPosition])
 			{
 				if (i.size() >= freq.value("size", 0))
 				{
@@ -64,19 +63,19 @@ void listen(uvw::Loop &loop) {
 			{
 				for (int j = 0; j < freq.value("size", 0); j++)
 				{
-					std::string message = freqBuffer[num][i][j].dump();
+					std::string message = freqBuffer[cPosition][i][j].dump();
 					uvw::Addr addr;
 					std::string ip = globalConfig.config.value("sendip", "-1");
 					unsigned int port = 4951;
-					//Send won't take message.c_str()
+					//send won't take message.c_str()
 					char* data = new char[message.length() + 1];
 					std::strcpy(data, message.c_str());
 					unsigned int len = message.length();
 					udp.send(ip, port, data, len);
 					delete[] data;
 				}
-				freqBuffer[num][i].resize(0);
-				freqBuffer[num][i].shrink_to_fit();
+				freqBuffer[cPosition][i].resize(0);
+				freqBuffer[cPosition][i].shrink_to_fit();
 			}
 			
 		}
@@ -90,8 +89,9 @@ void timer(uvw::Loop &loop)
 	auto timer = loop.resource<uvw::TimerHandle>();
 	std::chrono::milliseconds duration(2000);
 	timer->start(duration, duration);
-
-	timer->on<uvw::TimerEvent>([](const uvw::TimerEvent &, uvw::TimerHandle &timer) {
+	std::shared_ptr<uvw::UDPHandle> udp = loop.resource<uvw::UDPHandle>();
+	
+	timer->on<uvw::TimerEvent>([&udp](const uvw::TimerEvent &, uvw::TimerHandle &timer) {
 		std::cout << "In timer \n";
 	});
 	
