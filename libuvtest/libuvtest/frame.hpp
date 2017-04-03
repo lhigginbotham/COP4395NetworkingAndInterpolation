@@ -8,11 +8,11 @@
 class FrameBuffer
 {
 public:
-	FrameBuffer();
+	FrameBuffer(std::chrono::time_point<std::chrono::system_clock> time);
 	~FrameBuffer() = default;
 	bool LifetimeExceeded();
 
-	std::vector<std::vector<nlohmann::json>> freqBuffer;
+	std::vector<std::vector<nlohmann::json>> sensorBuffer;
 	std::chrono::time_point<std::chrono::system_clock> recievedTime;
 private:
 	std::chrono::duration<long long, std::milli> ElapsedTime(std::chrono::time_point<std::chrono::system_clock> startTime);

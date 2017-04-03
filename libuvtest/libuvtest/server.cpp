@@ -1,13 +1,16 @@
 #define _CRT_SECURE_NO_WARNINGS
 
-#include <uvw.hpp>
-#include <json.hpp>
+#include <deque>
 #include <iostream>
 #include <memory>
+#include <json.hpp>
+#include <uvw.hpp>
 
 #include "config.hpp"
+#include "frame.hpp"
 
-static std::vector<std::vector<std::vector<nlohmann::json>>> freqBuffer (10, std::vector<std::vector<nlohmann::json>>(0, std::vector<nlohmann::json> (0)));
+//static std::vector<std::vector<std::vector<nlohmann::json>>> freqBuffer (10, std::vector<std::vector<nlohmann::json>>(0, std::vector<nlohmann::json> (0)));
+static std::deque<FrameBuffer> frameBuffer;
 static const ConfigStore globalConfig ("config.log");
 
 void listen(uvw::Loop &loop) {
@@ -15,11 +18,13 @@ void listen(uvw::Loop &loop) {
 	udp->bind("127.0.0.1", 4951);
 	udp->recv();
 	std::map<std::string, int> ips;
+	int cPosition = 0;
+
 	udp->on<uvw::ErrorEvent>([](const uvw::ErrorEvent &err, uvw::UDPHandle &) {
 		std::cout << "Code: " << err.code() << " Message: " << err.what() << "\n";
 	});
 
-	udp->on<uvw::UDPDataEvent>([&ips](const uvw::UDPDataEvent &sData, uvw::UDPHandle &udp) {
+	udp->on<uvw::UDPDataEvent>([&ips, cPosition](const uvw::UDPDataEvent &sData, uvw::UDPHandle &udp) {
 		std::string result = sData.data.get();
 		bool transmitBuffer = false;
 		//Trim off excess data transmitted from client
@@ -28,24 +33,36 @@ void listen(uvw::Loop &loop) {
 		//Converting it to a Cstring causes Intellisense to no longer flag it
 		//Unsure what a proper fix to this would be as library dev blames it on Intellisense (and the fact that it compiles and runs regardless supports that)
 		nlohmann::json freq = nlohmann::json::parse(complete.c_str());
-		int cPosition = freq.value("number", 0);
+		//std::chrono::time_point<std::chrono::system_clock> currentTime = std::chrono::system_clock::now();
+
+		if (frameBuffer.empty())
+		{
+			time_t recievedTime = freq.value("time", 0);
+			frameBuffer.push_back(FrameBuffer(std::chrono::system_clock::from_time_t(recievedTime)));
+		}
 
 		if (ips.find(sData.sender.ip) == ips.end())
 		{
 			ips.emplace(sData.sender.ip, ips.size());
-			freqBuffer[cPosition].push_back(std::vector<nlohmann::json>());
+			frameBuffer[cPosition].sensorBuffer.push_back(std::vector<nlohmann::json>());
 		}
-		if (freqBuffer[cPosition].size() != ips.size())
+		if (frameBuffer[cPosition].sensorBuffer.size() != ips.size())
 		{
-			freqBuffer[cPosition].resize(ips.size());//This may break existing iterators so watch out for that
+			frameBuffer[cPosition].sensorBuffer.resize(ips.size());//This may break existing iterators so watch out for that
 		}
+
 		int ipPosition = ips.find(sData.sender.ip)->second;
-		freqBuffer[cPosition][ipPosition].push_back(freq);
+		auto front = frameBuffer.begin();
+		if (freq.value("time", 0) < std::chrono::system_clock::to_time_t(front->recievedTime))
+		{
+
+		}
+		frameBuffer[cPosition].sensorBuffer[ipPosition].push_back(freq);
 
 		int vFullTracker = 0;
-		if (freqBuffer[cPosition][ipPosition].size() >= ips.size())
+		if (frameBuffer[cPosition].sensorBuffer[ipPosition].size() >= ips.size())
 		{
-			for (auto &&i : freqBuffer[cPosition])
+			for (auto &&i : frameBuffer[cPosition].sensorBuffer)
 			{
 				if (i.size() >= freq.value("size", 0))
 				{
@@ -63,7 +80,7 @@ void listen(uvw::Loop &loop) {
 			{
 				for (int j = 0; j < freq.value("size", 0); j++)
 				{
-					std::string message = freqBuffer[cPosition][i][j].dump();
+					std::string message = frameBuffer[cPosition].sensorBuffer[i][j].dump();
 					uvw::Addr addr;
 					std::string ip = globalConfig.config.value("sendip", "-1");
 					unsigned int port = 4951;
@@ -74,10 +91,10 @@ void listen(uvw::Loop &loop) {
 					udp.send(ip, port, data, len);
 					delete[] data;
 				}
-				freqBuffer[cPosition][i].resize(0);
-				freqBuffer[cPosition][i].shrink_to_fit();
+				frameBuffer[cPosition].sensorBuffer[i].resize(0);
+				frameBuffer[cPosition].sensorBuffer[i].shrink_to_fit();
 			}
-			
+			frameBuffer.pop_front();
 		}
 
 		std::cout << "Length: " << sData.length << " Sender: " << sData.sender.ip << " Data: " << complete << "\n";

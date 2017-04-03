@@ -1,6 +1,6 @@
 #include "frame.hpp"
 
-FrameBuffer::FrameBuffer()
+FrameBuffer::FrameBuffer(std::chrono::time_point<std::chrono::system_clock> time) : recievedTime(time)
 {
 
 }
@@ -8,7 +8,8 @@ FrameBuffer::FrameBuffer()
 
 bool FrameBuffer::LifetimeExceeded() 
 {
-
+	std::chrono::duration<long long, std::milli> duration(500);
+	return ElapsedTime(this->recievedTime) >= duration ? true : false;
 }
 
 std::chrono::duration<long long, std::milli> FrameBuffer::ElapsedTime(std::chrono::time_point<std::chrono::system_clock> startTime)

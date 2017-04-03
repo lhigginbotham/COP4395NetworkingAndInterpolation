@@ -36,7 +36,6 @@ std::string ConfigStore::ParseFile(const std::string fileName)
 bool ConfigStore::ValidateConfig(const nlohmann::json &config)
 {
 	bool valid = true;
-	int tempValue;
 	type = config.value("type", -1);
 	switch (type) {
 		case 0:
