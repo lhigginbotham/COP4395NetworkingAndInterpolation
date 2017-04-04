@@ -50,6 +50,15 @@ bool InitializeSockets()
 #endif
 }
 
+int CloseSocket(int socketfd)
+{
+#if PLATFORM == PLATFORM_WINDOWS
+	return closesocket(socketfd);
+#else
+	return close(socketfd);
+#endif
+}
+
 void ShutdownSockets()
 {
 #if PLATFORM == PLATFORM_WINDOWS
@@ -139,7 +148,7 @@ int main(int argc, char *argv[])
 	freeaddrinfo(servinfo);
 
 	printf("talker: sent %d bytes to %s\n", numbytes, argv[1]);
-	closesocket(sockfd);
+	CloseSocket(sockfd);
 
 	ShutdownSockets();
 
