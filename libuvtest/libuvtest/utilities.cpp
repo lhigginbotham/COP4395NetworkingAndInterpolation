@@ -10,3 +10,9 @@ std::chrono::duration<long long, std::milli> pointToMilli(std::chrono::time_poin
 	std::chrono::duration<long long, std::milli> mTime(duration);
 	return mTime;
 }
+
+std::chrono::duration<long long, std::milli> time_tToMilli(std::time_t time)
+{
+	std::chrono::system_clock::time_point nPoint = std::chrono::system_clock::from_time_t(time);
+	return pointToMilli(nPoint);
+}

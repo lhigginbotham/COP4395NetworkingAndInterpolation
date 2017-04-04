@@ -52,17 +52,16 @@ void listen(uvw::Loop &loop, std::map<std::string, int> &ips) {
 
 		int ipPosition = ips.find(sData.sender.ip)->second;
 		auto front = frameBuffer.begin();
-		time_t freqTime = freq.value("time", 0);
-		time_t duration = 50;
+		std::chrono::milliseconds duration(50);
+		std::chrono::milliseconds freqTime = time_tToMilli(freq.value("time", 0));
 		std::time_t currentTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-		time_t lowerBound = std::chrono::system_clock::to_time_t(front->recievedTime);
-		time_t upperBound = std::chrono::system_clock::to_time_t(front->recievedTime) + duration;
-		if (freqTime < std::chrono::system_clock::to_time_t(front->recievedTime))
+		std::chrono::milliseconds lowerBound = pointToMilli(front->recievedTime);
+		std::chrono::milliseconds upperBound = lowerBound + duration;
+		if (freqTime < lowerBound)
 		{
 			return;
 		}
-		else if (freqTime >= std::chrono::system_clock::to_time_t(front->recievedTime) && 
-			freqTime < (std::chrono::system_clock::to_time_t(front->recievedTime) + duration))
+		else if (freqTime >= lowerBound && (freqTime < upperBound))
 		{
 			front->sensorBuffer[ipPosition].push_back(freq);
 		}
@@ -70,8 +69,7 @@ void listen(uvw::Loop &loop, std::map<std::string, int> &ips) {
 		{
 			for (auto &i : frameBuffer)
 			{
-				if(freqTime >= std::chrono::system_clock::to_time_t(front->recievedTime) &&
-					freqTime < (std::chrono::system_clock::to_time_t(front->recievedTime) + duration))
+				if(freqTime >= lowerBound && (freqTime < upperBound))
 				{
 					i.sensorBuffer[ipPosition].push_back(freq);
 					break;
