@@ -1,9 +1,11 @@
 #ifndef FRAME_HPP_
 #define FRAME_HPP_
 
+#include <chrono>
 #include <vector>
 #include <json.hpp>
-#include <chrono>
+
+#include "utilities.hpp"
 
 class FrameBuffer
 {

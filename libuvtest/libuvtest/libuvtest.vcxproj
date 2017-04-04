@@ -22,10 +22,12 @@
     <ClCompile Include="config.cpp" />
     <ClCompile Include="frame.cpp" />
     <ClCompile Include="server.cpp" />
+    <ClCompile Include="utilities.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="config.hpp" />
     <ClInclude Include="frame.hpp" />
+    <ClInclude Include="utilities.hpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
