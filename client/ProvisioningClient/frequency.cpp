@@ -24,6 +24,7 @@ std::string Message(std::string input, std::default_random_engine generator, int
 	nlohmann::json message;
 	message["number"] = number;
 	message["size"] = 3;
+	message["time"] = tTime;
 	std::string m = message.dump();
 	std::vector<nlohmann::json> freqs;
 	for (int i = 0; i < 5; i++)

@@ -13,11 +13,10 @@
 static std::deque<FrameBuffer> frameBuffer;
 static const ConfigStore globalConfig ("config.log");
 
-void listen(uvw::Loop &loop) {
+void listen(uvw::Loop &loop, std::map<std::string, int> &ips) {
 	std::shared_ptr<uvw::UDPHandle> udp = loop.resource<uvw::UDPHandle>();
 	udp->bind("127.0.0.1", 4951);
 	udp->recv();
-	std::map<std::string, int> ips;
 	int cPosition = 0;
 
 	udp->on<uvw::ErrorEvent>([](const uvw::ErrorEvent &err, uvw::UDPHandle &) {
@@ -53,11 +52,35 @@ void listen(uvw::Loop &loop) {
 
 		int ipPosition = ips.find(sData.sender.ip)->second;
 		auto front = frameBuffer.begin();
-		if (freq.value("time", 0) < std::chrono::system_clock::to_time_t(front->recievedTime))
+		time_t freqTime = freq.value("time", 0);
+		time_t duration = 50;
+		std::time_t currentTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+		time_t lowerBound = std::chrono::system_clock::to_time_t(front->recievedTime);
+		time_t upperBound = std::chrono::system_clock::to_time_t(front->recievedTime) + duration;
+		if (freqTime < std::chrono::system_clock::to_time_t(front->recievedTime))
 		{
-
+			return;
 		}
-		frameBuffer[cPosition].sensorBuffer[ipPosition].push_back(freq);
+		else if (freqTime >= std::chrono::system_clock::to_time_t(front->recievedTime) && 
+			freqTime < (std::chrono::system_clock::to_time_t(front->recievedTime) + duration))
+		{
+			front->sensorBuffer[ipPosition].push_back(freq);
+		}
+		else
+		{
+			for (auto &i : frameBuffer)
+			{
+				if(freqTime >= std::chrono::system_clock::to_time_t(front->recievedTime) &&
+					freqTime < (std::chrono::system_clock::to_time_t(front->recievedTime) + duration))
+				{
+					i.sensorBuffer[ipPosition].push_back(freq);
+					break;
+				}
+			}
+			frameBuffer.push_back(FrameBuffer(std::chrono::system_clock::from_time_t(freq.value("time", 0))));
+			frameBuffer[cPosition].sensorBuffer.resize(ips.size());//This may break existing iterators so watch out for that
+			frameBuffer.end()->sensorBuffer[ipPosition].push_back(freq);
+		}
 
 		int vFullTracker = 0;
 		if (frameBuffer[cPosition].sensorBuffer[ipPosition].size() >= ips.size())
@@ -116,7 +139,8 @@ void timer(uvw::Loop &loop)
 
 int main() {
 	auto loop = uvw::Loop::getDefault();
-	listen(*loop);
+	std::map<std::string, int> ips;
+	listen(*loop, ips);
 	timer(*loop);
 	loop->run();
 	return 0;
