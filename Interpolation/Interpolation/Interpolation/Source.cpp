@@ -1,16 +1,34 @@
+/*
+	Open scource code references
+
+	Point in polygon section Reference:
+	Title: How to check if a given point lies inside or outside a polygon?
+	Author: Unknown
+	URL: http://www.geeksforgeeks.org/how-to-check-if-a-given-point-lies-inside-a-polygon/
+
+
+	2D convex hull Reference:
+	Title: Algorithm Implementation/Geometry/Convex hull/Monotone chain
+	Author: Unknown
+	URL: https://en.wikibooks.org/wiki/Algorithm_Implementation/Geometry/Convex_hull/Monotone_chain
+
+
+*/
+
+
+
+
+
 #include <iostream>
 #include <stack>
 #include <stdlib.h>
 #include <vector>
 #include <algorithm>
 
+
+
+
 using namespace std;
-
-
-
-
-
-
 
 typedef double coord_t;         // coordinate type
 typedef double coord2_t;  // must be big enough to hold 2*max(|coordinate|)^2
@@ -31,7 +49,7 @@ coord2_t cross(const MeasuredPoint &O, const MeasuredPoint &A, const MeasuredPoi
 	return (A.x - O.x) * (B.y - O.y) - (A.y - O.y) * (B.x - O.x);
 }
 
-// Returns a list of points on the convex hull in counter-clockwise order.
+// Returns a list of points on the convex hull 
 // Note: the last point in the returned list is the same as the first one.
 vector<MeasuredPoint> convex_hull(std::vector<MeasuredPoint> P)
 {
@@ -39,7 +57,7 @@ vector<MeasuredPoint> convex_hull(std::vector<MeasuredPoint> P)
 	if (n == 1) return P;
 	vector<MeasuredPoint> H(2 * n);
 
-	// Sort points lexicographically
+	// Sort points 
 	sort(P.begin(), P.end());
 
 	// Build lower hull
@@ -59,27 +77,7 @@ vector<MeasuredPoint> convex_hull(std::vector<MeasuredPoint> P)
 }
 
 
-
-// A utility function to find next to top in a stack
-MeasuredPoint nextToTop(stack<MeasuredPoint> &S)
-{
-	MeasuredPoint p = S.top();
-	S.pop();
-	MeasuredPoint res = S.top();
-	S.push(p);
-	return res;
-}
-
-// A utility function to swap two MeasuredPoints
-void swap(MeasuredPoint &p1, MeasuredPoint &p2)
-{
-	MeasuredPoint temp = p1;
-	p1 = p2;
-	p2 = temp;
-}
-
-// A utility function to return square of distance
-// between p1 and p2
+// Function to obtain square of the distance between p1 and p2
 double distSq(MeasuredPoint p1, MeasuredPoint p2)
 {
 	return (p1.x - p2.x)*(p1.x - p2.x) +
@@ -190,10 +188,6 @@ bool isInside(std::vector<MeasuredPoint> polygon, int n, MeasuredPoint p)
 
 
 
-
-
-
-
 MeasuredPoint getCenter(std::vector<MeasuredPoint> MeasuredPoints)
 {
 	MeasuredPoint center;
@@ -272,9 +266,6 @@ double getDistance(double x1, double y1, double x2, double y2)
 	ydistance = pow((y1 - y2), 2);
 	distance = sqrt(xdistance + ydistance);
 
-
-
-
 	return distance;
 }
 
@@ -283,6 +274,7 @@ std::vector<MeasuredPoint> interpolation(std::vector <MeasuredPoint> sensors, st
 
 	double sumOfTop = 0;
 	double sumOfBottom = 0;
+	std::vector<MeasuredPoint> newPoints;
 	MeasuredPoint temp;
 	int isAlreadyDone = 0;
 	unsigned int i, j;
@@ -312,7 +304,7 @@ std::vector<MeasuredPoint> interpolation(std::vector <MeasuredPoint> sensors, st
 
 		if (isAlreadyDone == 0)
 		{
-			sensors.push_back(temp);
+			newPoints.push_back(temp);
 		}
 		isAlreadyDone = 0;
 
@@ -321,7 +313,7 @@ std::vector<MeasuredPoint> interpolation(std::vector <MeasuredPoint> sensors, st
 
 	}
 
-	return sensors;
+	return newPoints;
 }
 
 
