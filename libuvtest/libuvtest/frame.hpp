@@ -18,6 +18,7 @@ public:
 	~FrameBuffer() = default;
 	bool LifetimeExceeded();
 	void Transmit(bool complete, const std::map<std::string, int> &ips, const nlohmann::json &freq, uvw::UDPHandle &udp);
+	void Transmit(bool complete, const std::map<std::string, int> &ips, std::shared_ptr<uvw::UDPHandle> udp);
 
 	std::vector<std::vector<nlohmann::json>> sensorBuffer;
 	std::chrono::time_point<std::chrono::system_clock> recievedTime;

@@ -2,7 +2,6 @@
 
 #include <deque>
 #include <iostream>
-#include <memory>
 #include <json.hpp>
 #include <uvw.hpp>
 
@@ -11,7 +10,7 @@
 
 //static std::vector<std::vector<std::vector<nlohmann::json>>> freqBuffer (10, std::vector<std::vector<nlohmann::json>>(0, std::vector<nlohmann::json> (0)));
 static std::deque<FrameBuffer> frameBuffer;
-static const ConfigStore globalConfig ("config.log");
+const ConfigStore globalConfig ("config.log");
 
 void listen(uvw::Loop &loop, std::map<std::string, int> &ips) {
 	std::shared_ptr<uvw::UDPHandle> udp = loop.resource<uvw::UDPHandle>();
@@ -43,7 +42,7 @@ void listen(uvw::Loop &loop, std::map<std::string, int> &ips) {
 		if (ips.find(sData.sender.ip) == ips.end())
 		{
 			ips.emplace(sData.sender.ip, ips.size());
-			frameBuffer[cPosition].sensorBuffer.push_back(std::vector<nlohmann::json>());
+			frameBuffer.begin()->sensorBuffer.push_back(std::vector<nlohmann::json>());
 		}
 		if (frameBuffer[cPosition].sensorBuffer.size() != ips.size())
 		{
@@ -52,7 +51,7 @@ void listen(uvw::Loop &loop, std::map<std::string, int> &ips) {
 
 		int ipPosition = ips.find(sData.sender.ip)->second;
 		auto front = frameBuffer.begin();
-		std::chrono::milliseconds duration(50);
+		std::chrono::milliseconds duration(500);
 		std::chrono::milliseconds freqTime = time_tToMilli(freq.value("time", 0));
 		std::time_t currentTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 		std::chrono::milliseconds lowerBound = pointToMilli(front->recievedTime);
@@ -69,15 +68,16 @@ void listen(uvw::Loop &loop, std::map<std::string, int> &ips) {
 		{
 			for (auto &i : frameBuffer)
 			{
-				if(freqTime >= lowerBound && (freqTime < upperBound))
+				if(freqTime >= pointToMilli(i.recievedTime) && (freqTime < pointToMilli(i.recievedTime) + duration))
 				{
 					i.sensorBuffer[ipPosition].push_back(freq);
 					break;
 				}
 			}
 			frameBuffer.push_back(FrameBuffer(std::chrono::system_clock::from_time_t(freq.value("time", 0))));
-			frameBuffer[cPosition].sensorBuffer.resize(ips.size());//This may break existing iterators so watch out for that
-			frameBuffer.end()->sensorBuffer[ipPosition].push_back(freq);
+			//Using end() here causes a dereference error for some reason
+			frameBuffer.back().sensorBuffer.push_back(std::vector<nlohmann::json>());
+			frameBuffer.back().sensorBuffer.resize(ips.size());//This may break existing iterators so watch out for that
 		}
 
 		int vFullTracker = 0;
@@ -97,24 +97,7 @@ void listen(uvw::Loop &loop, std::map<std::string, int> &ips) {
 		}
 		if (transmitBuffer)
 		{
-			for (int i = 0; i < ips.size(); i++)
-			{
-				for (int j = 0; j < freq.value("size", 0); j++)
-				{
-					std::string message = frameBuffer[cPosition].sensorBuffer[i][j].dump();
-					uvw::Addr addr;
-					std::string ip = globalConfig.config.value("sendip", "-1");
-					unsigned int port = 4951;
-					//send won't take message.c_str()
-					char* data = new char[message.length() + 1];
-					std::strcpy(data, message.c_str());
-					unsigned int len = message.length();
-					udp.send(ip, port, data, len);
-					delete[] data;
-				}
-				frameBuffer[cPosition].sensorBuffer[i].resize(0);
-				frameBuffer[cPosition].sensorBuffer[i].shrink_to_fit();
-			}
+			frameBuffer.front().Transmit(true, ips, freq, udp);
 			frameBuffer.pop_front();
 		}
 
@@ -122,15 +105,37 @@ void listen(uvw::Loop &loop, std::map<std::string, int> &ips) {
 	});
 }
 
-void timer(uvw::Loop &loop)
+void timer(uvw::Loop &loop, std::map<std::string, int> &ips)
 {
 	auto timer = loop.resource<uvw::TimerHandle>();
 	std::chrono::milliseconds duration(2000);
 	timer->start(duration, duration);
 	std::shared_ptr<uvw::UDPHandle> udp = loop.resource<uvw::UDPHandle>();
-	
-	timer->on<uvw::TimerEvent>([&udp](const uvw::TimerEvent &, uvw::TimerHandle &timer) {
-		std::cout << "In timer \n";
+	if (udp)
+	{
+		auto test = udp.get();
+		test->data();
+	}
+	timer->on<uvw::TimerEvent>([&ips, udp](const uvw::TimerEvent &, uvw::TimerHandle &timer) {
+		std::chrono::milliseconds currentTime = pointToMilli(std::chrono::system_clock::now());
+		std::chrono::milliseconds duration(1000);
+		unsigned int numOfTransmits = 0;
+		auto test = udp.get();
+		test->data();
+		for (auto &i : frameBuffer)
+		{
+			std::chrono::milliseconds recievedTime = pointToMilli(i.recievedTime);
+			if (currentTime > recievedTime)
+			{
+				numOfTransmits++;
+			}
+		}
+		for (int i = 0; i < numOfTransmits; i++)
+		{
+			frameBuffer.front().Transmit(true, ips, udp);
+			frameBuffer.pop_front();
+		}
+		
 	});
 	
 }
@@ -139,7 +144,7 @@ int main() {
 	auto loop = uvw::Loop::getDefault();
 	std::map<std::string, int> ips;
 	listen(*loop, ips);
-	timer(*loop);
+	timer(*loop, ips);
 	loop->run();
 	return 0;
 }

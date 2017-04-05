@@ -19,4 +19,6 @@ private:
 	//Denote the type of server in operation: 0 = provisioning, 1 = handling
 	int type;
 };
+
+extern const ConfigStore globalConfig;
 #endif 
