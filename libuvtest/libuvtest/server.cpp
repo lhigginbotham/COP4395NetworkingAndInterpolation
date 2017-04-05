@@ -140,11 +140,22 @@ void timer(uvw::Loop &loop, std::map<std::string, int> &ips)
 	
 }
 
+void dbSave(uvw::Loop &loop, std::map<std::string, int> &ips)
+{
+	auto timer = loop.resource<uvw::TimerHandle>();
+	std::chrono::seconds duration(360);
+
+}
+
 int main() {
 	auto loop = uvw::Loop::getDefault();
 	std::map<std::string, int> ips;
 	listen(*loop, ips);
 	timer(*loop, ips);
+	if (globalConfig.type == 1)
+	{
+		dbSave(*loop, ips);
+	}
 	loop->run();
 	return 0;
 }
