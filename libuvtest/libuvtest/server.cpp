@@ -53,7 +53,6 @@ void listen(uvw::Loop &loop, std::map<std::string, int> &ips) {
 		auto front = frameBuffer.begin();
 		std::chrono::milliseconds duration(500);
 		std::chrono::milliseconds freqTime = time_tToMilli(freq.value("time", 0));
-		std::time_t currentTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 		std::chrono::milliseconds lowerBound = pointToMilli(front->recievedTime);
 		std::chrono::milliseconds upperBound = lowerBound + duration;
 		if (freqTime < lowerBound)
@@ -111,17 +110,11 @@ void timer(uvw::Loop &loop, std::map<std::string, int> &ips)
 	std::chrono::milliseconds duration(2000);
 	timer->start(duration, duration);
 	std::shared_ptr<uvw::UDPHandle> udp = loop.resource<uvw::UDPHandle>();
-	if (udp)
-	{
-		auto test = udp.get();
-		test->data();
-	}
+
 	timer->on<uvw::TimerEvent>([&ips, udp](const uvw::TimerEvent &, uvw::TimerHandle &timer) {
 		std::chrono::milliseconds currentTime = pointToMilli(std::chrono::system_clock::now());
 		std::chrono::milliseconds duration(1000);
 		unsigned int numOfTransmits = 0;
-		auto test = udp.get();
-		test->data();
 		for (auto &i : frameBuffer)
 		{
 			std::chrono::milliseconds recievedTime = pointToMilli(i.recievedTime);
@@ -130,12 +123,19 @@ void timer(uvw::Loop &loop, std::map<std::string, int> &ips)
 				numOfTransmits++;
 			}
 		}
+		bool complete = true;
 		for (int i = 0; i < numOfTransmits; i++)
 		{
-			frameBuffer.front().Transmit(true, ips, udp);
+			for (auto &j : frameBuffer.front().sensorBuffer)
+			{
+				if (j.empty() || j.size() > j.front().value("size", 0))
+				{
+					complete = false;
+				}
+			}
+			frameBuffer.front().Transmit(complete, ips, udp);
 			frameBuffer.pop_front();
 		}
-		
 	});
 	
 }
