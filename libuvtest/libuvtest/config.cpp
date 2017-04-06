@@ -44,7 +44,7 @@ bool ConfigStore::ValidateConfig(const nlohmann::json &config)
 				valid = false;
 				break;
 			}
-			if (config.value("interval", -1) < 0 && config.value("freqlow", -1) < 0 && config.value("freqhigh", -1))
+			if (config.value("interval", -1) < 0 || config.value("freqlow", -1) < 0 || config.value("freqhigh", -1) < 0)
 			{
 				valid = false;
 				break;
@@ -52,14 +52,21 @@ bool ConfigStore::ValidateConfig(const nlohmann::json &config)
 
 			break;
 		case 1:
-
+			if (config.value("sendip", "-1").compare("-1") == 0 || config.value("databaseIP", "").compare("") == 0 ||
+				config.value("databaseUsername", "").compare("") == 0 || config.value("databasePassword", "").compare("") == 0)
+			{
+				valid = false;
+				break;
+			}
+			if (config.value("interval", -1) < 0 || config.value("freqlow", -1) < 0 || config.value("freqhigh", -1) < 0
+				|| config.value("databasePort", -1) < 0)
+			{
+				valid = false;
+				break;
+			}
+			break;
 		default:
 			valid = false;
 	}
 	return valid;
-}
-
-int ConfigStore::getType()
-{
-	return type;
 }

@@ -1,6 +1,10 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <deque>
+#include <cppconn/driver.h>
+#include <cppconn/exception.h>
+#include <cppconn/resultset.h>
+#include <cppconn/statement.h>
 #include <iostream>
 #include <json.hpp>
 #include <uvw.hpp>
@@ -10,7 +14,7 @@
 
 //static std::vector<std::vector<std::vector<nlohmann::json>>> freqBuffer (10, std::vector<std::vector<nlohmann::json>>(0, std::vector<nlohmann::json> (0)));
 static std::deque<FrameBuffer> frameBuffer;
-const ConfigStore globalConfig ("config.log");
+const ConfigStore globalConfig ("config1.log");
 
 void listen(uvw::Loop &loop, std::map<std::string, int> &ips) {
 	std::shared_ptr<uvw::UDPHandle> udp = loop.resource<uvw::UDPHandle>();
@@ -144,7 +148,26 @@ void dbSave(uvw::Loop &loop, std::map<std::string, int> &ips)
 {
 	auto timer = loop.resource<uvw::TimerHandle>();
 	std::chrono::seconds duration(360);
+	try {
+		std::string ip = globalConfig.config.value("databaseIP", "");
+		std::string port = std::to_string(globalConfig.config.value("databasePort", -1));
+		std::string connectionStr = "tcp://" + ip + ":" + port;
+		sql::Driver *driver;
+		sql::Connection *conn;
+		driver = get_driver_instance();
+		conn = driver->connect(connectionStr.c_str(), globalConfig.config.value("databaseUsername", "").c_str(), 
+			globalConfig.config.value("databasePassword", "").c_str());
 
+		sql::Statement *stmt;
+		sql::ResultSet *res;
+	}catch (sql::SQLException &e) {
+		std::cout << "# ERR: SQLException in " << __FILE__;
+		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << "\n";
+		std::cout << "# ERR: " << e.what();
+		std::cout << " (MySQL error code: " << e.getErrorCode();
+		std::cout << ", SQLState: " << e.getSQLState() << " )\n";
+	}
+	//sql::mysql::MySQL_Driver *driver;
 }
 
 int main() {

@@ -86,10 +86,11 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>C:\Dev\libuv-1.11.0\include;C:\Dev\uvw-master\src;C:\Dev\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Dev\libuv-1.11.0\include;C:\Dev\uvw-master\src;C:\Dev\include;C:\Program Files %28x86%29\MySQL\MySQL Connector C++ 1.1.8\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>advapi32.lib;iphlpapi.lib;psapi.lib;shell32.lib;user32.lib;userenv.lib;ws2_32.lib;C:\Dev\libuv-1.11.0\Debug\lib\libuv.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>advapi32.lib;iphlpapi.lib;psapi.lib;shell32.lib;user32.lib;userenv.lib;ws2_32.lib;C:\Dev\libuv-1.11.0\Debug\lib\libuv.lib;C:\Program Files (x86)\MySQL\MySQL Connector C++ 1.1.8\lib\opt\mysqlcppconn.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\Program Files\MySQL\Connector.C++ 1.1\lib\opt;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
