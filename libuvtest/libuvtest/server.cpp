@@ -4,7 +4,7 @@
 #include <cppconn/driver.h>
 #include <cppconn/exception.h>
 #include <cppconn/resultset.h>
-#include <cppconn/statement.h>
+#include <cppconn/prepared_statement.h>
 #include <iostream>
 #include <json.hpp>
 #include <uvw.hpp>
@@ -157,9 +157,16 @@ void dbSave(uvw::Loop &loop, std::map<std::string, int> &ips)
 		driver = get_driver_instance();
 		conn = driver->connect(connectionStr.c_str(), globalConfig.config.value("databaseUsername", "").c_str(), 
 			globalConfig.config.value("databasePassword", "").c_str());
+		conn->setSchema("mydb");
 
-		sql::Statement *stmt;
-		sql::ResultSet *res;
+		sql::PreparedStatement *prep_stmt;
+		prep_stmt = conn->prepareStatement("INSERT INTO sensors(sid, Latitude, Longitude) VALUES (?, ?, ?)");
+		prep_stmt->setInt(1, 12);
+		prep_stmt->setDouble(2, 2.3210);
+		prep_stmt->setDouble(3, 3.2432);
+		prep_stmt->execute();
+
+		delete conn;
 	}catch (sql::SQLException &e) {
 		std::cout << "# ERR: SQLException in " << __FILE__;
 		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << "\n";
