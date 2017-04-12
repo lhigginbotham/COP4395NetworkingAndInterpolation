@@ -4,7 +4,6 @@
 nlohmann::json InitializeJson(std::string input, std::default_random_engine generator, const std::time_t &time)
 {
 	nlohmann::json freq;
-	tm *ltm = std::localtime(&time); //localtime is not thread safe
 	//std::string sTime = std::to_string(1900 + ltm->tm_year) + "-" + std::to_string(ltm->tm_mon) + "-" + std::to_string(ltm->tm_mday)
 	//	+ "T" + std::to_string(ltm->tm_hour) + ":" + std::to_string(ltm->tm_min) + ":" + std::to_string(ltm->tm_sec);
 	
@@ -13,7 +12,7 @@ nlohmann::json InitializeJson(std::string input, std::default_random_engine gene
 	freq["sensor-id"] = input;
 	freq["frequency"] = 900 + rand() % 100;
 	freq["time"] = time;
-	freq["reading"] = -75;
+	freq["reading"] = rand() % 100;
 	
 	return freq;
 }

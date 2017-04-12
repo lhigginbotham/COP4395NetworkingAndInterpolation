@@ -14,7 +14,7 @@
 
 //static std::vector<std::vector<std::vector<nlohmann::json>>> freqBuffer (10, std::vector<std::vector<nlohmann::json>>(0, std::vector<nlohmann::json> (0)));
 static std::deque<FrameBuffer> frameBuffer;
-const ConfigStore globalConfig ("config1.log");
+const ConfigStore globalConfig ("config.log");
 
 void listen(uvw::Loop &loop, std::map<std::string, int> &ips) {
 	std::shared_ptr<uvw::UDPHandle> udp = loop.resource<uvw::UDPHandle>();
@@ -93,35 +93,35 @@ void listen(uvw::Loop &loop, std::map<std::string, int> &ips) {
 			}
 		}
 
-		if (globalConfig.type == 0)
+		int vFullTracker = 0;
+		if (frameBuffer[cPosition].sensorBuffer[ipPosition].size() >= ips.size())
 		{
-			int vFullTracker = 0;
-			if (frameBuffer[cPosition].sensorBuffer[ipPosition].size() >= ips.size())
+			for (auto &&i : frameBuffer[cPosition].sensorBuffer)
 			{
-				for (auto &&i : frameBuffer[cPosition].sensorBuffer)
+				if (i.size() >= freq.value("size", 0))
 				{
-					if (i.size() >= freq.value("size", 0))
-					{
-						vFullTracker++;
-					}
-				}
-				if (vFullTracker >= ips.size())
-				{
-					transmitBuffer = true;
+					vFullTracker++;
 				}
 			}
-			if (transmitBuffer)
+			if (vFullTracker >= ips.size())
+			{
+				transmitBuffer = true;
+			}
+		}
+		if (transmitBuffer)
+		{
+			if (globalConfig.type == 0)
 			{
 				frameBuffer.front().Transmit(true, ips, freq, udp);
 				frameBuffer.pop_front();
 			}
+			else if (globalConfig.type == 1)
+			{
 
-			std::cout << "Length: " << sData.length << " Sender: " << sData.sender.ip << " Data: " << complete << "\n";
+			}
 		}
-		else if (globalConfig.type == 1)
-		{
 
-		}
+		//std::cout << "Length: " << sData.length << " Sender: " << sData.sender.ip << " Data: " << complete << "\n";
 	});
 }
 
@@ -152,6 +152,7 @@ void timer(uvw::Loop &loop, std::map<std::string, int> &ips)
 				if (j.empty() || j.size() > j.front().value("size", 0))
 				{
 					complete = false;
+					break;
 				}
 			}
 			frameBuffer.front().Transmit(complete, ips, udp);
@@ -201,7 +202,7 @@ int main() {
 	timer(*loop, ips);
 	if (globalConfig.type == 1)
 	{
-		dbSave(*loop, ips);
+		//dbSave(*loop, ips);
 	}
 	loop->run();
 	return 0;

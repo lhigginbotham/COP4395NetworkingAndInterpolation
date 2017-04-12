@@ -6,19 +6,45 @@ FrameBuffer::FrameBuffer(std::chrono::time_point<std::chrono::system_clock> time
 }
 
 
-bool FrameBuffer::LifetimeExceeded() 
+bool FrameBuffer::LifetimeExceeded()
 {
 	std::chrono::duration<long long, std::milli> duration(500);
 	return ElapsedTime(this->recievedTime) >= duration ? true : false;
 }
 
-void FrameBuffer::Transmit(bool complete, const std::map<std::string, int> &ips, const nlohmann::json &freq, uvw::UDPHandle &udp)
+void FrameBuffer::Transmit(bool complete, const std::map<std::string, int> &ips, const nlohmann::json &message, uvw::UDPHandle &udp)
 {
+	std::chrono::time_point<std::chrono::system_clock> systemTime = std::chrono::system_clock::now();
+	std::time_t currentTime = std::chrono::system_clock::to_time_t(systemTime);
+	int totalSize = ips.size() * message.value("size", 0);
+	std::queue<nlohmann::json> frequencies;
 	for (int i = 0; i < ips.size(); i++)
 	{
-		for (int j = 0; j < freq.value("size", 0); j++)
+		for (int j = 0; j < sensorBuffer[i].size(); j++)
 		{
-			std::string message = this->sensorBuffer[i][j].dump();
+			for (int k = 0; k < sensorBuffer[i][j]["freqs"].size(); k++)
+			{
+				frequencies.push(sensorBuffer[i][j]["freqs"][k]);
+			}
+		}
+	}
+	int size = frequencies.size();
+	for (int i = 0; i < size; i++)
+	{
+		std::cout << frequencies.front().dump() << "\n";
+		frequencies.pop();
+	}
+	std::cout << "\n";
+	for (int i = 0; i < ips.size(); i++)
+	{
+		for (int j = 0; j < message.value("size", 0); j++)
+		{
+			nlohmann::json alteredMessage = this->sensorBuffer[i][j];
+
+			alteredMessage["size"] = totalSize;
+			alteredMessage["time"] = currentTime;
+			std::string message = alteredMessage.dump();
+			//std::cout << message << "\n";
 			std::string ip = globalConfig.config.value("sendip", "-1");
 			unsigned int port = 4951;
 			//send won't take message.c_str()
@@ -35,7 +61,7 @@ void FrameBuffer::Transmit(bool complete, const std::map<std::string, int> &ips,
 
 void FrameBuffer::Transmit(bool complete, const std::map<std::string, int> &ips, std::shared_ptr<uvw::UDPHandle> udp)
 {
-	for (int i = 0; i < ips.size(); i++)
+	for (int i = 0; i < this->sensorBuffer.size(); i++)
 	{
 		if (!this->sensorBuffer[i].empty())
 		{

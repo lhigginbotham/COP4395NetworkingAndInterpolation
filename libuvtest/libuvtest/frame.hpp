@@ -4,6 +4,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <chrono>
+#include <queue>
 #include <vector>
 #include <json.hpp>
 #include <uvw.hpp>
