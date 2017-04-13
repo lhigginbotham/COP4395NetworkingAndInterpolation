@@ -1,10 +1,6 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <deque>
-#include <cppconn/driver.h>
-#include <cppconn/exception.h>
-#include <cppconn/resultset.h>
-#include <cppconn/prepared_statement.h>
 #include <iostream>
 #include <json.hpp>
 #include <uvw.hpp>
@@ -47,6 +43,10 @@ void listen(uvw::Loop &loop, std::map<std::string, int> &ips) {
 		{
 			ips.emplace(sData.sender.ip, ips.size());
 			frameBuffer.begin()->sensorBuffer.push_back(std::vector<nlohmann::json>());
+			if (globalConfig.type == 0)
+			{
+				addSensorDatabase(freq);
+			}
 		}
 		//If first use of sensor buffer, resize if to expected size
 		if (frameBuffer[cPosition].sensorBuffer.size() != ips.size())
