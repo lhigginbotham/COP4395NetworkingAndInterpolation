@@ -20,67 +20,93 @@ void FrameBuffer::Transmit(bool complete, const std::map<std::string, int> &ips,
 	std::queue<nlohmann::json> frequencies;
 	for (int i = 0; i < ips.size(); i++)
 	{
-		for (int j = 0; j < sensorBuffer[i].size(); j++)
+		for (int j = 0; j < this->sensorBuffer[i].size(); j++)
 		{
-			for (int k = 0; k < sensorBuffer[i][j]["freqs"].size(); k++)
+			for (int k = 0; k < this->sensorBuffer[i][j]["freqs"].size(); k++)
 			{
-				frequencies.push(sensorBuffer[i][j]["freqs"][k]);
+				frequencies.push(this->sensorBuffer[i][j]["freqs"][k]);
 			}
-		}
-	}
-	int size = frequencies.size();
-	for (int i = 0; i < size; i++)
-	{
-		std::cout << frequencies.front().dump() << "\n";
-		frequencies.pop();
-	}
-	std::cout << "\n";
-	for (int i = 0; i < ips.size(); i++)
-	{
-		for (int j = 0; j < message.value("size", 0); j++)
-		{
-			nlohmann::json alteredMessage = this->sensorBuffer[i][j];
-
-			alteredMessage["size"] = totalSize;
-			alteredMessage["time"] = currentTime;
-			std::string message = alteredMessage.dump();
-			//std::cout << message << "\n";
-			std::string ip = globalConfig.config.value("sendip", "-1");
-			unsigned int port = 4951;
-			//send won't take message.c_str()
-			char* data = new char[message.length() + 1];
-			std::strcpy(data, message.c_str());
-			unsigned int len = message.length();
-			udp.send(ip, port, data, len);
-			delete[] data;
 		}
 		this->sensorBuffer[i].resize(0);
 		this->sensorBuffer[i].shrink_to_fit();
+	}
+	std::vector<nlohmann::json> freq;
+	
+	//TODO: Implement filtering here
+
+	while (!frequencies.empty())
+	{
+		for (int i = 0; i < 5; i++)
+		{
+			if (frequencies.empty())
+				break;
+			freq.push_back(frequencies.front());
+			frequencies.pop();
+		}
+		nlohmann::json alteredMessage;
+		alteredMessage["complete"] = true;
+		alteredMessage["freqs"] = freq;
+		alteredMessage["size"] = totalSize;
+		alteredMessage["time"] = currentTime;
+		std::string message = alteredMessage.dump();
+		//std::cout << message << "\n";
+		std::string ip = globalConfig.config.value("sendip", "-1");
+		unsigned int port = 4951;
+		//send won't take message.c_str()
+		char* data = new char[message.length() + 1];
+		std::strcpy(data, message.c_str());
+		unsigned int len = message.length();
+		udp.send(ip, port, data, len);
+		delete[] data;
 	}
 }
 
 void FrameBuffer::Transmit(bool complete, const std::map<std::string, int> &ips, std::shared_ptr<uvw::UDPHandle> udp)
 {
-	for (int i = 0; i < this->sensorBuffer.size(); i++)
+	std::chrono::time_point<std::chrono::system_clock> systemTime = std::chrono::system_clock::now();
+	std::time_t currentTime = std::chrono::system_clock::to_time_t(systemTime);
+
+	std::queue<nlohmann::json> frequencies;
+	for (int i = 0; i < ips.size(); i++)
 	{
-		if (!this->sensorBuffer[i].empty())
+		for (int j = 0; j < this->sensorBuffer[i].size(); j++)
 		{
-			int size = sensorBuffer[i].size();
-			for (int j = 0; j < size; j++)
+			for (int k = 0; k < this->sensorBuffer[i][j]["freqs"].size(); k++)
 			{
-				std::string message = this->sensorBuffer[i][j].dump();
-				std::string ip = globalConfig.config.value("sendip", "-1");
-				unsigned int port = 4951;
-				//send won't take message.c_str()
-				char* data = new char[message.length() + 1];
-				std::strcpy(data, message.c_str());
-				unsigned int len = message.length();
-				udp->send(ip, port, data, len);
-				delete[] data;
+				frequencies.push(this->sensorBuffer[i][j]["freqs"][k]);
 			}
 		}
 		this->sensorBuffer[i].resize(0);
 		this->sensorBuffer[i].shrink_to_fit();
+	}
+
+	//TODO Implement filtering
+
+	std::vector<nlohmann::json> freq;
+	int totalSize = (frequencies.size() + (5-1)) / 5;
+	while (!frequencies.empty())
+	{
+		for (int i = 0; i < 5; i++)
+		{
+			if (frequencies.empty())
+				break;
+			freq.push_back(frequencies.front());
+			frequencies.pop();
+		}
+		nlohmann::json alteredMessage;
+		alteredMessage["complete"] = complete;
+		alteredMessage["freqs"] = freq;
+		alteredMessage["size"] = totalSize;
+		alteredMessage["time"] = currentTime;
+		std::string message = alteredMessage.dump();
+		std::string ip = globalConfig.config.value("sendip", "-1");
+		unsigned int port = 4951;
+		//send won't take message.c_str()
+		char* data = new char[message.length() + 1];
+		std::strcpy(data, message.c_str());
+		unsigned int len = message.length();
+		udp->send(ip, port, data, len);
+		delete[] data;
 	}
 }
 

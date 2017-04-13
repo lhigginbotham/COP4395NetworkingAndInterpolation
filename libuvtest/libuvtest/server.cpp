@@ -121,7 +121,7 @@ void listen(uvw::Loop &loop, std::map<std::string, int> &ips) {
 			}
 		}
 
-		//std::cout << "Length: " << sData.length << " Sender: " << sData.sender.ip << " Data: " << complete << "\n";
+		std::cout << "Length: " << sData.length << " Sender: " << sData.sender.ip << " Data: " << complete << "\n";
 	});
 }
 
