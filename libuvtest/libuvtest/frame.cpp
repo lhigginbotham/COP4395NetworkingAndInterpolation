@@ -114,7 +114,6 @@ void FrameBuffer::Transmit(bool complete, const std::map<std::string, int> &ips,
 		unsigned int len = message.length();
 		udp->send(ip, port, std::move(testData), len);
 		freq.resize(0);
-		delete[] data;
 	}
 }
 
