@@ -4,6 +4,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <chrono>
+#include <ctime>
 #include <queue>
 #include <vector>
 #include <json.hpp>
@@ -17,6 +18,7 @@ class FrameBuffer
 public:
 	FrameBuffer(std::chrono::time_point<std::chrono::system_clock> time);
 	~FrameBuffer() = default;
+	bool BatchSave(const std::map<std::string, int> &ips);
 	bool LifetimeExceeded();
 	void Transmit(bool complete, const std::map<std::string, int> &ips, const nlohmann::json &freq, uvw::UDPHandle &udp);
 	void Transmit(bool complete, const std::map<std::string, int> &ips, std::shared_ptr<uvw::UDPHandle> udp);

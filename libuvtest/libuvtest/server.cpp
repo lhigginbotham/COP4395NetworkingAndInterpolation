@@ -117,7 +117,7 @@ void listen(uvw::Loop &loop, std::map<std::string, int> &ips) {
 			}
 			else if (globalConfig.type == 1)
 			{
-
+				frameBuffer.front().BatchSave(ips);
 			}
 		}
 
@@ -172,11 +172,14 @@ void dbSave(uvw::Loop &loop, std::map<std::string, int> &ips)
 		std::string connectionStr = "tcp://" + ip + ":" + port;
 		sql::Driver *driver;
 		sql::Connection *conn;
+		sql::Statement *stmt;
 		driver = get_driver_instance();
 		conn = driver->connect(connectionStr.c_str(), globalConfig.config.value("databaseUsername", "").c_str(), 
 			globalConfig.config.value("databasePassword", "").c_str());
 		conn->setSchema("mydb");
 
+		
+		
 		sql::PreparedStatement *prep_stmt;
 		prep_stmt = conn->prepareStatement("INSERT INTO sensors(sid, Latitude, Longitude) VALUES (?, ?, ?)");
 		prep_stmt->setInt(1, 21);
