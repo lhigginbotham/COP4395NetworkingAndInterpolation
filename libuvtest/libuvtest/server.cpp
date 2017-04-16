@@ -8,6 +8,8 @@
 #include "config.hpp"
 #include "frame.hpp"
 
+#define MISS_THRESHOLD 6
+
 //static std::vector<std::vector<std::vector<nlohmann::json>>> freqBuffer (10, std::vector<std::vector<nlohmann::json>>(0, std::vector<nlohmann::json> (0)));
 static std::deque<FrameBuffer> frameBuffer;
 const ConfigStore globalConfig ("config.log");
@@ -53,7 +55,11 @@ void listen(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std
 		{
 			ips.push_back(std::pair<std::string, int>(sData.sender.ip, ips.size()));
 			misses.emplace(sData.sender.ip, 0);
-			frameBuffer.begin()->sensorBuffer.push_back(std::vector<nlohmann::json>());
+			//Add a new sensorbuffer for current and stored future frames
+			for (auto &frame : frameBuffer)
+			{
+				frame.sensorBuffer.push_back(std::vector<nlohmann::json>());
+			}
 			if (globalConfig.type == 0)
 			{
 				addSensorDatabase(freq);
@@ -127,9 +133,10 @@ void listen(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std
 		}
 		if (transmitBuffer)
 		{
-			for (auto &i : misses)
+			//Reset misses counter
+			for (auto &miss : misses)
 			{
-				i.second = 0;
+				miss.second = 0;
 			}
 			if (globalConfig.type == 0)
 			{
@@ -146,7 +153,7 @@ void listen(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std
 	});
 }
 
-void timer(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std::map<std::string, int> misses)
+void timer(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std::map<std::string, int> &misses)
 {
 	auto timer = loop.resource<uvw::TimerHandle>();
 	std::chrono::milliseconds duration(2000);
@@ -166,6 +173,7 @@ void timer(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std:
 			}
 		}
 		bool complete = true;
+		int posTracker = 0;
 		for (int i = 0; i < numOfTransmits; i++)
 		{
 			for (auto &j : frameBuffer.front().sensorBuffer)
@@ -174,14 +182,60 @@ void timer(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std:
 				{
 					if (j.empty())
 					{
-						
+						std::string ip = ips[posTracker].first;
+						misses.find(ip)->second++;
 					}
 					complete = false;
 					break;
 				}
+				posTracker++;
 			}
 			frameBuffer.front().Transmit(complete, ips, udp);
 			frameBuffer.pop_front();
+		}
+		if (numOfTransmits <= 0 && posTracker <= 0)
+		{
+			//Add misses to all sensors if frame is empty
+			if (frameBuffer.empty())
+			{
+				for (auto &miss : misses)
+				{
+					miss.second++;
+				}
+			}
+		}
+		std::string baseip = "";
+		if (!misses.empty())
+		{
+			for (auto &miss : misses)
+			{
+				if (miss.second >= MISS_THRESHOLD)
+				{
+					baseip = miss.first;
+				}
+			}
+			if (baseip != "")
+			{
+				misses.erase(baseip);
+				bool alterPosition = false;
+				for (int i = 0; i < ips.size(); i++)
+				{
+					if (alterPosition == true)
+					{
+						ips[i].second--;
+					}
+					if (ips[i].first == baseip)
+					{
+						ips.erase(ips.begin() + i);
+						alterPosition = true;
+						//Account for removing second to last element
+						if (ips.size() == (i+1))
+						{
+							ips[i].second--;
+						}
+					}
+				}
+			}
 		}
 	});
 	
