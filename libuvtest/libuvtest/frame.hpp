@@ -18,10 +18,10 @@ class FrameBuffer
 public:
 	FrameBuffer(std::chrono::time_point<std::chrono::system_clock> time);
 	~FrameBuffer() = default;
-	bool BatchSave(const std::map<std::string, int> &ips);
+	bool BatchSave(const std::vector <std::pair<std::string, int>> &ips);
 	bool LifetimeExceeded();
-	void Transmit(bool complete, const std::map<std::string, int> &ips, const nlohmann::json &freq, uvw::UDPHandle &udp);
-	void Transmit(bool complete, const std::map<std::string, int> &ips, std::shared_ptr<uvw::UDPHandle> udp);
+	void Transmit(bool complete, const std::vector <std::pair<std::string, int>> &ips, const nlohmann::json &freq, uvw::UDPHandle &udp);
+	void Transmit(bool complete, const std::vector <std::pair<std::string, int>> &ips, std::shared_ptr<uvw::UDPHandle> udp);
 
 	std::vector<std::vector<nlohmann::json>> sensorBuffer;
 	std::chrono::time_point<std::chrono::system_clock> recievedTime;

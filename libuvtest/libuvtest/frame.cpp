@@ -12,7 +12,7 @@ std::chrono::duration<long long, std::milli> duration(500);
 return ElapsedTime(this->recievedTime) >= duration ? true : false;
 }
 
-void FrameBuffer::Transmit(bool complete, const std::map<std::string, int> &ips, const nlohmann::json &message, uvw::UDPHandle &udp)
+void FrameBuffer::Transmit(bool complete, const std::vector <std::pair<std::string, int>> &ips, const nlohmann::json &message, uvw::UDPHandle &udp)
 {
 	std::chrono::time_point<std::chrono::system_clock> systemTime = std::chrono::system_clock::now();
 	std::time_t currentTime = std::chrono::system_clock::to_time_t(systemTime);
@@ -63,7 +63,7 @@ void FrameBuffer::Transmit(bool complete, const std::map<std::string, int> &ips,
 	}
 }
 
-void FrameBuffer::Transmit(bool complete, const std::map<std::string, int> &ips, std::shared_ptr<uvw::UDPHandle> udp)
+void FrameBuffer::Transmit(bool complete, const std::vector <std::pair<std::string, int>> &ips, std::shared_ptr<uvw::UDPHandle> udp)
 {
 	std::chrono::time_point<std::chrono::system_clock> systemTime = std::chrono::system_clock::now();
 	std::time_t currentTime = std::chrono::system_clock::to_time_t(systemTime);
@@ -117,7 +117,7 @@ void FrameBuffer::Transmit(bool complete, const std::map<std::string, int> &ips,
 	}
 }
 
-bool FrameBuffer::BatchSave(const std::map<std::string, int> &ips)
+bool FrameBuffer::BatchSave(const std::vector <std::pair<std::string, int>> &ips)
 {
 	std::vector<nlohmann::json> frequencies;
 	bool completed = true;

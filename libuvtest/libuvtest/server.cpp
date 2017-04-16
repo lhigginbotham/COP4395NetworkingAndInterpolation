@@ -12,7 +12,7 @@
 static std::deque<FrameBuffer> frameBuffer;
 const ConfigStore globalConfig ("config.log");
 
-void listen(uvw::Loop &loop, std::map<std::string, int> &ips) {
+void listen(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std::map<std::string, int> &misses) {
 	std::shared_ptr<uvw::UDPHandle> udp = loop.resource<uvw::UDPHandle>();
 	udp->bind("0.0.0.0", 4951);
 	udp->recv();
@@ -22,7 +22,7 @@ void listen(uvw::Loop &loop, std::map<std::string, int> &ips) {
 		std::cout << "Code: " << err.code() << " Message: " << err.what() << "\n";
 	});
 
-	udp->on<uvw::UDPDataEvent>([&ips, cPosition](const uvw::UDPDataEvent &sData, uvw::UDPHandle &udp) {
+	udp->on<uvw::UDPDataEvent>([&ips, &misses, cPosition](const uvw::UDPDataEvent &sData, uvw::UDPHandle &udp) {
 		std::string result = sData.data.get();
 		bool transmitBuffer = false;
 		//Trim off excess data transmitted from client
@@ -38,15 +38,27 @@ void listen(uvw::Loop &loop, std::map<std::string, int> &ips) {
 			time_t recievedTime = freq.value("time", 0);
 			frameBuffer.push_back(FrameBuffer(std::chrono::system_clock::from_time_t(recievedTime)));
 		}
+
 		//Check if incoming ip has been recieved before
-		if (ips.find(sData.sender.ip) == ips.end())
+		bool recieved = false;
+		for (auto i : ips)
 		{
-			ips.emplace(sData.sender.ip, ips.size());
+			if(i.first == sData.sender.ip)
+			{
+				recieved = true;
+				break;
+			}
+		}
+		if (!recieved)
+		{
+			ips.push_back(std::pair<std::string, int>(sData.sender.ip, ips.size()));
+			misses.emplace(sData.sender.ip, 0);
 			frameBuffer.begin()->sensorBuffer.push_back(std::vector<nlohmann::json>());
 			if (globalConfig.type == 0)
 			{
 				addSensorDatabase(freq);
 			}
+
 		}
 		//If first use of sensor buffer, resize if to expected size
 		if (frameBuffer[cPosition].sensorBuffer.size() != ips.size())
@@ -54,7 +66,12 @@ void listen(uvw::Loop &loop, std::map<std::string, int> &ips) {
 			frameBuffer[cPosition].sensorBuffer.resize(ips.size());//This may break existing iterators so watch out for that
 		}
 		//Handle placements of incoming packets based on their time and the current frames time
-		int ipPosition = ips.find(sData.sender.ip)->second;
+		int ipPosition = -1;
+		for (auto ip : ips)
+		{
+			if (ip.first == sData.sender.ip)
+				ipPosition = ip.second;
+		}
 		auto front = frameBuffer.begin();
 		std::chrono::milliseconds duration(500);
 		std::chrono::milliseconds freqTime = time_tToMilli(freq.value("time", 0));
@@ -110,6 +127,10 @@ void listen(uvw::Loop &loop, std::map<std::string, int> &ips) {
 		}
 		if (transmitBuffer)
 		{
+			for (auto &i : misses)
+			{
+				i.second = 0;
+			}
 			if (globalConfig.type == 0)
 			{
 				frameBuffer.front().Transmit(true, ips, freq, udp);
@@ -125,14 +146,14 @@ void listen(uvw::Loop &loop, std::map<std::string, int> &ips) {
 	});
 }
 
-void timer(uvw::Loop &loop, std::map<std::string, int> &ips)
+void timer(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std::map<std::string, int> misses)
 {
 	auto timer = loop.resource<uvw::TimerHandle>();
 	std::chrono::milliseconds duration(2000);
 	timer->start(duration, duration);
 	std::shared_ptr<uvw::UDPHandle> udp = loop.resource<uvw::UDPHandle>();
 
-	timer->on<uvw::TimerEvent>([&ips, udp](const uvw::TimerEvent &, uvw::TimerHandle &timer) {
+	timer->on<uvw::TimerEvent>([&ips, &misses, udp](const uvw::TimerEvent &, uvw::TimerHandle &timer) {
 		std::chrono::milliseconds currentTime = pointToMilli(std::chrono::system_clock::now());
 		std::chrono::milliseconds duration(1000);
 		unsigned int numOfTransmits = 0;
@@ -151,6 +172,10 @@ void timer(uvw::Loop &loop, std::map<std::string, int> &ips)
 			{
 				if (j.empty() || j.size() > j.front().value("size", 0))
 				{
+					if (j.empty())
+					{
+						
+					}
 					complete = false;
 					break;
 				}
@@ -200,9 +225,11 @@ void dbSave(uvw::Loop &loop, std::map<std::string, int> &ips)
 
 int main() {
 	auto loop = uvw::Loop::getDefault();
-	std::map<std::string, int> ips;
-	listen(*loop, ips);
-	timer(*loop, ips);
+	std::vector <std::pair<std::string, int>> ips;
+	//std::map<std::string, int> ips;
+	std::map<std::string, int> misses;
+	listen(*loop, ips, misses);
+	timer(*loop, ips, misses);
 	if (globalConfig.type == 1)
 	{
 		//dbSave(*loop, ips);
