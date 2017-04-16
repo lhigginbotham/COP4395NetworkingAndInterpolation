@@ -127,10 +127,10 @@ int main(int argc, char *argv[])
 		}
 		if (num > 10)
 			num = 0;
-		for (int i = 0; i < 3; i++)
+		for (int i = 0; i < 20; i++)
 		{
 			time = std::chrono::system_clock::now();
-			std::string t = Message(argv[2], generator, num, time);
+			std::string t = Message(argv[2], generator, num, time, i);
 			nlohmann::json freq = nlohmann::json::parse(t.c_str());
 			std::string s = freq.dump();
 			std::cout << "Out: " << freq.dump() << "\n";

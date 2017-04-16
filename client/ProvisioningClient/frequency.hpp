@@ -10,6 +10,6 @@
 #include <random>
 
 nlohmann::json InitializeJson(std::string input, std::default_random_engine generator, const std::time_t &time);
-std::string Message(std::string input, std::default_random_engine generator, int number, const std::chrono::time_point<std::chrono::system_clock> &time);
+std::string Message(std::string input, std::default_random_engine generator, int number, const std::chrono::time_point<std::chrono::system_clock> &time, int totalFreqs);
 
 #endif
