@@ -230,7 +230,10 @@ void timer(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std:
 				}
 				posTracker++;
 			}
-			frameBuffer.front().Transmit(complete, ips, udp);
+			if (globalConfig.type == 0)
+			{
+				frameBuffer.front().Transmit(complete, ips, udp);
+			}
 			frameBuffer.pop_front();
 		}
 		if (numOfTransmits <= 0 && posTracker <= 0)

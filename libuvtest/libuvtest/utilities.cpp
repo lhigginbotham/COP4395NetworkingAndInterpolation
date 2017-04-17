@@ -44,7 +44,7 @@ bool addSensorDatabase(const nlohmann::json &message)
 		if (!res->next())
 		{
 			std::cout << "Is null\n";
-			delete[] prep_stmt;
+			delete prep_stmt;
 			prep_stmt = conn->prepareStatement("INSERT INTO sensors(SID, Latitude, Longitude) VALUES (?, ?, ?)");
 			prep_stmt->setInt(1, sid);
 			prep_stmt->setDouble(2, lat);
