@@ -146,7 +146,7 @@ bool FrameBuffer::BatchSave(const std::vector <std::pair<std::string, int>> &ips
 		else
 			vals += "(?, ?, ?, ?, ?), ";
 	}
-	std::string ins = "INSERT INTO live(TIME, Completed, Frequency, Readings, Sensors_SID) VALUES " + vals;
+	std::string ins = "INSERT INTO Live(TIME, Completed, Frequency, Readings, Sensors_SID) VALUES " + vals;
 	sql::SQLString sqlIns = ins.c_str();
 	try {
 		sql::Driver *driver;

@@ -303,7 +303,7 @@ void dbSave(uvw::Loop &loop, std::map<std::string, int> &ips)
 		
 		
 		sql::PreparedStatement *prep_stmt;
-		prep_stmt = conn->prepareStatement("INSERT INTO sensors(sid, Latitude, Longitude) VALUES (?, ?, ?)");
+		prep_stmt = conn->prepareStatement("INSERT INTO Sensors(sid, Latitude, Longitude) VALUES (?, ?, ?)");
 		prep_stmt->setInt(1, 21);
 		prep_stmt->setDouble(2, 2.3210);
 		prep_stmt->setDouble(3, 3.2432);
