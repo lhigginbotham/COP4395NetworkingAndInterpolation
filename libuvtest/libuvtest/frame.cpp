@@ -188,7 +188,7 @@ bool FrameBuffer::BatchSave(const std::vector <std::pair<std::string, int>> &ips
 		}
 		std::cout << "Frequencies: " << frequencies.size() << "Completed: " << completed << "\n";
 		sql::Statement *stmt = conn->createStatement();
-		stmt->execute("TRUNCATE live");
+		stmt->execute("TRUNCATE Live");
 		prep_stmt->execute();
 		delete stmt;
 		delete prep_stmt;
