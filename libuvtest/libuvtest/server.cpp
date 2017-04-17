@@ -83,6 +83,7 @@ void listen(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std
 		std::chrono::milliseconds freqTime = time_tToMilli(freq.value("time", 0));
 		std::chrono::milliseconds lowerBound = pointToMilli(front->recievedTime);
 		std::chrono::milliseconds upperBound = lowerBound + duration;
+		bool sendFuture = false;
 		//Discard
 		if (freqTime < lowerBound)
 		{
@@ -91,17 +92,47 @@ void listen(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std
 		//Place in current frame
 		else if (freqTime >= lowerBound && (freqTime < upperBound))
 		{
-			front->sensorBuffer[ipPosition].push_back(freq);
+			if (!front->sensorBuffer[ipPosition].empty())
+			{
+				for (int i=0; i<front->sensorBuffer[ipPosition].size(); i++)
+				{
+					if (front->sensorBuffer[ipPosition][i]["freqs"][0]["frequency"] == freq["freqs"][0]["frequency"])
+					{
+						sendFuture = true;
+					}
+				}
+			}
+			if (!sendFuture)
+			{
+				front->sensorBuffer[ipPosition].push_back(freq);
+			}
 		}
 		//Place in future frame that can hold it
-		else
+		else if(freqTime >= upperBound || sendFuture)
 		{
-			bool inFrame = false;
-			for (auto &i : frameBuffer)
+			bool inFrame = false, freqFound = false;
+			for (auto &frame : frameBuffer)
 			{
-				if (freqTime >= pointToMilli(i.recievedTime) && (freqTime < pointToMilli(i.recievedTime) + duration))
+				if (freqTime < pointToMilli(frame.recievedTime))
 				{
-					i.sensorBuffer[ipPosition].push_back(freq);
+					inFrame = true;
+					break;
+				}
+				if (freqTime >= pointToMilli(frame.recievedTime) && (freqTime < pointToMilli(frame.recievedTime) + duration))
+				{
+					for (int i = 0; i < frame.sensorBuffer[ipPosition].size(); i++)
+					{
+						if (frame.sensorBuffer[ipPosition][i]["freqs"][0]["frequency"] == freq["freqs"][0]["frequency"])
+						{
+							freqFound = true;
+							break;
+						}
+					}
+					if (freqFound)
+					{
+						continue;
+					}
+					frame.sensorBuffer[ipPosition].push_back(freq);
 					inFrame = true;
 					break;
 				}
@@ -149,15 +180,24 @@ void listen(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std
 			}
 		}
 
-		std::cout << "Length: " << sData.length << " Sender: " << sData.sender.ip << " Data: " << complete << "\n";
+		//std::cout << "Length: " << sData.length << " Sender: " << sData.sender.ip << " Data: " << complete << "\n";
 	});
 }
 
 void timer(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std::map<std::string, int> &misses)
 {
 	auto timer = loop.resource<uvw::TimerHandle>();
-	std::chrono::milliseconds duration(2000);
-	timer->start(duration, duration);
+	std::chrono::milliseconds duration;
+	if (globalConfig.type == 0)
+	{
+		std::chrono::milliseconds duration(2000);
+		timer->start(duration, duration);
+	}
+	else
+	{
+		std::chrono::milliseconds duration(3000);
+		timer->start(duration, duration);
+	}
 	std::shared_ptr<uvw::UDPHandle> udp = loop.resource<uvw::UDPHandle>();
 
 	timer->on<uvw::TimerEvent>([&ips, &misses, udp](const uvw::TimerEvent &, uvw::TimerHandle &timer) {

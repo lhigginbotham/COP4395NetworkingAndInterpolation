@@ -159,7 +159,7 @@ bool FrameBuffer::BatchSave(const std::vector <std::pair<std::string, int>> &ips
 		conn = driver->connect(connectionStr.c_str(), globalConfig.config.value("databaseUsername", "").c_str(),
 			globalConfig.config.value("databasePassword", "").c_str());
 		conn->setSchema("mydb");
-
+		
 		sql::PreparedStatement *prep_stmt;
 		prep_stmt = conn->prepareStatement(sqlIns);
 		//Start at one here to match up expected indexing with prepared statements
@@ -178,7 +178,11 @@ bool FrameBuffer::BatchSave(const std::vector <std::pair<std::string, int>> &ips
 			prep_stmt->setInt(stmtPos++, frequencies[i]["reading"]);
 			prep_stmt->setInt(stmtPos++, frequencies[i]["sensor-id"]);
 		}
+		std::cout << "Frequencies: " << frequencies.size() << "Completed: " << completed << "\n";
+		sql::Statement *stmt = conn->createStatement();
+		stmt->execute("TRUNCATE live");
 		prep_stmt->execute();
+		delete stmt;
 		delete prep_stmt;
 		delete conn;
 		return true;
