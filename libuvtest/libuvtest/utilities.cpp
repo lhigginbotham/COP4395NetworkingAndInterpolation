@@ -35,7 +35,7 @@ bool addSensorDatabase(const nlohmann::json &message)
 		sql::PreparedStatement *prep_stmt;
 		prep_stmt = conn->prepareStatement("SELECT * FROM sensors WHERE SID=?");
 		nlohmann::json freq = message["freqs"][0];
-		int sid = freq.value("sensor-id", -1);
+		int sid = freq.value("id", -1);
 		double lat = message["lat"];
 		double longCoord = message["long"];
 		prep_stmt->setInt(1, sid);
@@ -44,7 +44,7 @@ bool addSensorDatabase(const nlohmann::json &message)
 		if (!res->next())
 		{
 			std::cout << "Is null\n";
-			delete[] prep_stmt;
+			delete prep_stmt;
 			prep_stmt = conn->prepareStatement("INSERT INTO sensors(SID, Latitude, Longitude) VALUES (?, ?, ?)");
 			prep_stmt->setInt(1, sid);
 			prep_stmt->setDouble(2, lat);

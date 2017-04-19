@@ -115,22 +115,21 @@ int main(int argc, char *argv[])
 	}
 
 	std::default_random_engine generator;
-	std::chrono::time_point<std::chrono::system_clock> time;
 	unsigned long int i = 0;
 	int num = 0;
+	std::time_t previousTime = 0;
 	while (true) {
-		//Use this to slow down output for testing, ugly but works
-		if (i < 100000000)
-		{
-			i++;
-			continue;
-		}
 		if (num > 10)
 			num = 0;
-		for (int i = 0; i < 3; i++)
+		std::chrono::time_point<std::chrono::system_clock> times = std::chrono::system_clock::now();
+		std::time_t time = std::chrono::system_clock::to_time_t(times);
+		if (previousTime >= time)
 		{
-			time = std::chrono::system_clock::now();
-			std::string t = Message(argv[2], generator, num, time);
+			continue;
+		}
+		for (int i = 0; i < 114; i++)
+		{
+			std::string t = Message(argv[2], generator, num, time, i);
 			nlohmann::json freq = nlohmann::json::parse(t.c_str());
 			std::string s = freq.dump();
 			std::cout << "Out: " << freq.dump() << "\n";
@@ -144,6 +143,7 @@ int main(int argc, char *argv[])
 		}
 		i = 0;
 		num++;
+		previousTime = time;
 	}
 	freeaddrinfo(servinfo);
 

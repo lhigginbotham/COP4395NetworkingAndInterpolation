@@ -149,7 +149,7 @@ void listen(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std
 			}
 		}
 
-		std::cout << "Length: " << sData.length << " Sender: " << sData.sender.ip << " Data: " << complete << "\n";
+		//std::cout << "Length: " << sData.length << " Sender: " << sData.sender.ip << " Data: " << complete << "\n";
 	});
 }
 
@@ -173,12 +173,12 @@ void timer(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std:
 			}
 		}
 		bool complete = true;
-		int posTracker = 0;
+		int posTracker = 0, activeTracker = 0;
 		for (int i = 0; i < numOfTransmits; i++)
 		{
 			for (auto &j : frameBuffer.front().sensorBuffer)
 			{
-				if (j.empty() || j.size() > j.front().value("size", 0))
+				if (j.empty() || j.size() < j.front().value("size", 0))
 				{
 					if (j.empty())
 					{
@@ -189,11 +189,13 @@ void timer(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std:
 					break;
 				}
 				posTracker++;
+				activeTracker++;
 			}
 			frameBuffer.front().Transmit(complete, ips, udp);
 			frameBuffer.pop_front();
+			posTracker = 0;
 		}
-		if (numOfTransmits <= 0 && posTracker <= 0)
+		if (numOfTransmits <= 0 && activeTracker <= 0)
 		{
 			//Add misses to all sensors if frame is empty
 			if (frameBuffer.empty())

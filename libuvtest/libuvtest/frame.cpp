@@ -30,6 +30,8 @@ void FrameBuffer::Transmit(bool complete, const std::vector <std::pair<std::stri
 		this->sensorBuffer[i].resize(0);
 		this->sensorBuffer[i].shrink_to_fit();
 	}
+	int testSize = (frequencies.size() + (15 - 1)) / 15;
+	std::cout << "Test Size: " << testSize << "\n";
 	std::vector<nlohmann::json> freq;
 
 	//TODO: Implement filtering here
@@ -85,7 +87,8 @@ void FrameBuffer::Transmit(bool complete, const std::vector <std::pair<std::stri
 	//TODO Implement filtering
 
 	std::vector<nlohmann::json> freq;
-	int totalSize = (frequencies.size() + (5 - 1)) / 5;
+	int totalSize = (frequencies.size() + (15 - 1)) / 15;
+	std::cout << "Total Size: "<< totalSize << "\n";
 
 	while (!frequencies.empty())
 	{
@@ -167,18 +170,18 @@ bool FrameBuffer::BatchSave(const std::vector <std::pair<std::string, int>> &ips
 		int stmtPos = 1;
 		for (int i = 0; i < frequencies.size(); i++)
 		{
-			time = frequencies[i].value("time", 0);
+			time = std::chrono::system_clock::to_time_t(this->recievedTime);
 			auto ltm = localtime(&time);
 			std::string sTime = std::to_string(1900 + ltm->tm_year) + "-" + std::to_string(ltm->tm_mon) + "-" + std::to_string(ltm->tm_mday)
 					+ " " + std::to_string(ltm->tm_hour) + ":" + std::to_string(ltm->tm_min) + ":" + std::to_string(ltm->tm_sec);
 			sql::SQLString sqlTime = sTime.c_str();
 			prep_stmt->setDateTime(stmtPos++, sqlTime);
 			prep_stmt->setBoolean(stmtPos++, completed);
-			prep_stmt->setInt(stmtPos++, frequencies[i]["frequency"]);
-			prep_stmt->setInt(stmtPos++, frequencies[i]["reading"]);
-			prep_stmt->setInt(stmtPos++, frequencies[i]["sensor-id"]);
+			prep_stmt->setInt(stmtPos++, frequencies[i]["freq"]);
+			prep_stmt->setInt(stmtPos++, frequencies[i]["read"]);
+			prep_stmt->setInt(stmtPos++, frequencies[i]["id"]);
 		}
-		prep_stmt->execute();
+		//prep_stmt->execute();
 		delete prep_stmt;
 		delete conn;
 		return true;
