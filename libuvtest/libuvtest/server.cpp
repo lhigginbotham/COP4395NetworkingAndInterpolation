@@ -40,7 +40,6 @@ void listen(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std
 		if (frameBuffer.empty())
 		{
 			time_t recievedTime = freq.value("time", 0);
-			lastSave = recievedTime;
 			frameBuffer.push_back(FrameBuffer(std::chrono::system_clock::from_time_t(recievedTime)));
 		}
 
@@ -56,6 +55,7 @@ void listen(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std
 		}
 		if (!recieved)
 		{
+			lastSave = freq.value("time", 0);
 			ips.push_back(std::pair<std::string, int>(sData.sender.ip, ips.size()));
 			misses.emplace(sData.sender.ip, 0);
 			//Add a new sensorbuffer for current and stored future frames
@@ -309,8 +309,8 @@ void dbSave(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips)
 			//historicalBuffer.clear();
 			std::cout << "Historical Buffer: " << historicalBuffer.size() << "\n";
 		}
-		std::cout << "Exiting DBSave\n";*/
-	});
+		std::cout << "Exiting DBSave\n";
+	});*/
 }
 
 int main() {

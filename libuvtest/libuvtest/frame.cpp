@@ -151,17 +151,20 @@ bool FrameBuffer::BatchSave(const std::vector <std::pair<std::string, int>> &ips
 	}
 	std::string ins = "";
 	bool standardSave = true;
-	if ((std::chrono::system_clock::to_time_t(recievedTime) - lastSave) > 60)
+	int comparator = std::chrono::system_clock::to_time_t(recievedTime) - lastSave; 
+	if (comparator > 15)
 	{
 		lastSave = std::chrono::system_clock::to_time_t(recievedTime);
 		standardSave = false;
 	}
-	if (saveType == 0 && lastSave)
+	
+	if (saveType == 0 && standardSave)
 	{
 		ins = "INSERT INTO Live(TIME, Completed, Frequency, Readings, Sensors_SID) VALUES " + vals;
 	}
 	else
 	{
+		std::cout << "Saving to Recorded Data\n";
 		ins = "INSERT INTO Recorded_Data(TIME, Completed, Frequency, Readings, Sensors_SID) VALUES " + vals;
 	}
 	sql::SQLString sqlIns = ins.c_str();
@@ -195,8 +198,6 @@ bool FrameBuffer::BatchSave(const std::vector <std::pair<std::string, int>> &ips
 			prep_stmt->setInt(stmtPos++, frequencies[i]["read"]);
 			prep_stmt->setInt(stmtPos++, frequencies[i]["id"]);
 		}
-		sql::Statement *stmt = conn->createStatement();
-		stmt->execute("TRUNCATE Live");
 		prep_stmt->execute();
 		std::cout << "Frequencies: " << frequencies.size() << " Completed: " << completed << "\n";
 		delete prep_stmt;
