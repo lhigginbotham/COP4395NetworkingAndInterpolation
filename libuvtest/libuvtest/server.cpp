@@ -13,7 +13,8 @@
 //static std::vector<std::vector<std::vector<nlohmann::json>>> freqBuffer (10, std::vector<std::vector<nlohmann::json>>(0, std::vector<nlohmann::json> (0)));
 static std::deque<FrameBuffer> frameBuffer;
 static std::deque<FrameBuffer> historicalBuffer;
-const ConfigStore globalConfig ("config.log");
+const ConfigStore globalConfig("config.log");
+std::time_t lastSave = 0;
 
 void listen(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std::map<std::string, int> &misses) {
 	std::shared_ptr<uvw::UDPHandle> udp = loop.resource<uvw::UDPHandle>();
@@ -39,6 +40,7 @@ void listen(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std
 		if (frameBuffer.empty())
 		{
 			time_t recievedTime = freq.value("time", 0);
+			lastSave = recievedTime;
 			frameBuffer.push_back(FrameBuffer(std::chrono::system_clock::from_time_t(recievedTime)));
 		}
 
@@ -46,7 +48,7 @@ void listen(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std
 		bool recieved = false;
 		for (auto i : ips)
 		{
-			if(i.first == sData.sender.ip)
+			if (i.first == sData.sender.ip)
 			{
 				recieved = true;
 				break;
@@ -146,6 +148,7 @@ void listen(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std
 			}
 			else if (globalConfig.type == 1)
 			{
+				std::cout << "Allocating frame buffer\n";
 				historicalBuffer.push_front(frameBuffer.front());
 				frameBuffer.front().BatchSave(ips, 0);
 				if (historicalBuffer.size() > 10)
@@ -168,6 +171,7 @@ void timer(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std:
 	std::shared_ptr<uvw::UDPHandle> udp = loop.resource<uvw::UDPHandle>();
 
 	timer->on<uvw::TimerEvent>([&ips, &misses, udp](const uvw::TimerEvent &, uvw::TimerHandle &timer) {
+		std::cout << "Entering Timer\n";
 		std::chrono::milliseconds currentTime = pointToMilli(std::chrono::system_clock::now());
 		std::chrono::milliseconds duration(1000);
 		unsigned int numOfTransmits = 0;
@@ -249,7 +253,7 @@ void timer(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std:
 						ips.erase(ips.begin() + i);
 						alterPosition = true;
 						//Account for removing second to last element
-						if (ips.size() == (i+1))
+						if (ips.size() == (i + 1))
 						{
 							ips[i].second--;
 						}
@@ -258,12 +262,12 @@ void timer(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std:
 			}
 		}
 	});
-	
+
 }
 
 void dbSave(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips)
 {
-	auto timer = loop.resource<uvw::TimerHandle>();
+/*	auto timer = loop.resource<uvw::TimerHandle>();
 	std::chrono::seconds duration(10);
 	std::shared_ptr<uvw::UDPHandle> udp = loop.resource<uvw::UDPHandle>();
 	timer->start(duration, duration);
@@ -288,15 +292,24 @@ void dbSave(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips)
 			}
 			if (!completed)
 			{
+				std::cout << "Saving first complete buffer\n";
 				hFrame.BatchSave(ips, 1);
 				break;
 			}
+			std::cout << "Completed is: " << completed << "\n";
 			if (!historicalBuffer.empty())
 			{
 				historicalBuffer.front().BatchSave(ips, 1);
 			}
-			historicalBuffer.clear();
+			int size = historicalBuffer.size();
+			for (int i = 0; i < size; i++)
+			{
+				historicalBuffer.pop_front();
+			}
+			//historicalBuffer.clear();
+			std::cout << "Historical Buffer: " << historicalBuffer.size() << "\n";
 		}
+		std::cout << "Exiting DBSave\n";*/
 	});
 }
 
@@ -309,7 +322,7 @@ int main() {
 	timer(*loop, ips, misses);
 	if (globalConfig.type == 1)
 	{
-		//dbSave(*loop, ips);
+		dbSave(*loop, ips);
 	}
 	loop->run();
 	return 0;

@@ -18,6 +18,6 @@ private:
 	bool ValidateConfig(const nlohmann::json &config);
 	//Denote the type of server in operation: 0 = provisioning, 1 = handling
 };
-
+extern time_t lastSave;
 extern const ConfigStore globalConfig;
 #endif 

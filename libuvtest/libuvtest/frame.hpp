@@ -27,7 +27,6 @@ public:
 	std::chrono::time_point<std::chrono::system_clock> recievedTime;
 private:
 	std::chrono::duration<long long, std::milli> ElapsedTime(std::chrono::time_point<std::chrono::system_clock> startTime);
-
 };
 
 #endif

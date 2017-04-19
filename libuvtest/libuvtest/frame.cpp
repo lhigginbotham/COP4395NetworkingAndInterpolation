@@ -150,7 +150,13 @@ bool FrameBuffer::BatchSave(const std::vector <std::pair<std::string, int>> &ips
 			vals += "(?, ?, ?, ?, ?), ";
 	}
 	std::string ins = "";
-	if (saveType == 0)
+	bool standardSave = true;
+	if ((std::chrono::system_clock::to_time_t(recievedTime) - lastSave) > 60)
+	{
+		lastSave = std::chrono::system_clock::to_time_t(recievedTime);
+		standardSave = false;
+	}
+	if (saveType == 0 && lastSave)
 	{
 		ins = "INSERT INTO Live(TIME, Completed, Frequency, Readings, Sensors_SID) VALUES " + vals;
 	}
