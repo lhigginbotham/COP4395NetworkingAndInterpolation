@@ -12,6 +12,7 @@
 
 //static std::vector<std::vector<std::vector<nlohmann::json>>> freqBuffer (10, std::vector<std::vector<nlohmann::json>>(0, std::vector<nlohmann::json> (0)));
 static std::deque<FrameBuffer> frameBuffer;
+static std::deque<FrameBuffer> historicalBuffer;
 const ConfigStore globalConfig ("config.log");
 
 void listen(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std::map<std::string, int> &misses) {
@@ -145,7 +146,13 @@ void listen(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std
 			}
 			else if (globalConfig.type == 1)
 			{
-				frameBuffer.front().BatchSave(ips);
+				historicalBuffer.push_front(frameBuffer.front());
+				frameBuffer.front().BatchSave(ips, 0);
+				if (historicalBuffer.size() > 10)
+				{
+					historicalBuffer.pop_back();
+				}
+				frameBuffer.pop_front();
 			}
 		}
 
@@ -243,40 +250,43 @@ void timer(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std:
 	
 }
 
-void dbSave(uvw::Loop &loop, std::map<std::string, int> &ips)
+void dbSave(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips)
 {
 	auto timer = loop.resource<uvw::TimerHandle>();
-	std::chrono::seconds duration(360);
-	try {
-		std::string ip = globalConfig.config.value("databaseIP", "");
-		std::string port = std::to_string(globalConfig.config.value("databasePort", -1));
-		std::string connectionStr = "tcp://" + ip + ":" + port;
-		sql::Driver *driver;
-		sql::Connection *conn;
-		sql::Statement *stmt;
-		driver = get_driver_instance();
-		conn = driver->connect(connectionStr.c_str(), globalConfig.config.value("databaseUsername", "").c_str(), 
-			globalConfig.config.value("databasePassword", "").c_str());
-		conn->setSchema("mydb");
+	std::chrono::seconds duration(10);
+	std::shared_ptr<uvw::UDPHandle> udp = loop.resource<uvw::UDPHandle>();
+	timer->start(duration, duration);
 
-		
-		
-		sql::PreparedStatement *prep_stmt;
-		prep_stmt = conn->prepareStatement("INSERT INTO sensors(sid, Latitude, Longitude) VALUES (?, ?, ?)");
-		prep_stmt->setInt(1, 21);
-		prep_stmt->setDouble(2, 2.3210);
-		prep_stmt->setDouble(3, 3.2432);
-		prep_stmt->execute();
-
-		delete conn;
-	}catch (sql::SQLException &e) {
-		std::cout << "# ERR: SQLException in " << __FILE__;
-		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << "\n";
-		std::cout << "# ERR: " << e.what();
-		std::cout << " (MySQL error code: " << e.getErrorCode();
-		std::cout << ", SQLState: " << e.getSQLState() << " )\n";
-	}
-	//sql::mysql::MySQL_Driver *driver;
+	timer->on<uvw::TimerEvent>([&ips, udp](const uvw::TimerEvent &, uvw::TimerHandle &timer) {
+		bool completed = true;
+		for (auto hFrame : historicalBuffer)
+		{
+			for (int i = 0; i < ips.size(); i++)
+			{
+				for (int j = 0; j < hFrame.sensorBuffer[i].size(); j++)
+				{
+					for (int k = 0; k < hFrame.sensorBuffer[i][j]["freqs"].size(); k++)
+					{
+						bool comp = hFrame.sensorBuffer[i][j]["complete"];
+						if (!comp)
+						{
+							completed = false;
+						}
+					}
+				}
+			}
+			if (!completed)
+			{
+				hFrame.BatchSave(ips, 1);
+				break;
+			}
+			if (!historicalBuffer.empty())
+			{
+				historicalBuffer.front().BatchSave(ips, 1);
+			}
+			historicalBuffer.clear();
+		}
+	});
 }
 
 int main() {

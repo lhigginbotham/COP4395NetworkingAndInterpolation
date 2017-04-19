@@ -120,7 +120,7 @@ void FrameBuffer::Transmit(bool complete, const std::vector <std::pair<std::stri
 	}
 }
 
-bool FrameBuffer::BatchSave(const std::vector <std::pair<std::string, int>> &ips)
+bool FrameBuffer::BatchSave(const std::vector <std::pair<std::string, int>> &ips, const int saveType)
 {
 	std::vector<nlohmann::json> frequencies;
 	bool completed = true;
@@ -149,7 +149,15 @@ bool FrameBuffer::BatchSave(const std::vector <std::pair<std::string, int>> &ips
 		else
 			vals += "(?, ?, ?, ?, ?), ";
 	}
-	std::string ins = "INSERT INTO live(TIME, Completed, Frequency, Readings, Sensors_SID) VALUES " + vals;
+	std::string ins = "";
+	if (saveType == 0)
+	{
+		ins = "INSERT INTO Live(TIME, Completed, Frequency, Readings, Sensors_SID) VALUES " + vals;
+	}
+	else
+	{
+		ins = "INSERT INTO Recorded_Data(TIME, Completed, Frequency, Readings, Sensors_SID) VALUES " + vals;
+	}
 	sql::SQLString sqlIns = ins.c_str();
 	try {
 		sql::Driver *driver;
@@ -181,6 +189,8 @@ bool FrameBuffer::BatchSave(const std::vector <std::pair<std::string, int>> &ips
 			prep_stmt->setInt(stmtPos++, frequencies[i]["read"]);
 			prep_stmt->setInt(stmtPos++, frequencies[i]["id"]);
 		}
+		sql::Statement *stmt = conn->createStatement();
+		stmt->execute("TRUNCATE Live");
 		//prep_stmt->execute();
 		delete prep_stmt;
 		delete conn;
