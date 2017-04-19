@@ -17,6 +17,7 @@ void FrameBuffer::Transmit(bool complete, const std::vector <std::pair<std::stri
 	std::chrono::time_point<std::chrono::system_clock> systemTime = std::chrono::system_clock::now();
 	std::time_t currentTime = std::chrono::system_clock::to_time_t(systemTime);
 	int totalSize = ips.size() * message.value("size", 0);
+	std::cout << "Total Size: " << totalSize << "\n";
 	std::queue<nlohmann::json> frequencies;
 	for (int i = 0; i < ips.size(); i++)
 	{
@@ -86,7 +87,7 @@ void FrameBuffer::Transmit(bool complete, const std::vector <std::pair<std::stri
 
 	std::vector<nlohmann::json> freq;
 	int totalSize = (frequencies.size() + (5 - 1)) / 5;
-
+	std::cout << "Total Size: " << totalSize << "\n";
 	while (!frequencies.empty())
 	{
 		for (int i = 0; i < 5; i++)
@@ -117,7 +118,7 @@ void FrameBuffer::Transmit(bool complete, const std::vector <std::pair<std::stri
 	}
 }
 
-bool FrameBuffer::BatchSave(const std::vector <std::pair<std::string, int>> &ips, const int saveType)
+bool FrameBuffer::BatchSave(const std::vector <std::pair<std::string, int>> &ips, const int saveType, bool enterComplete)
 {
 	std::vector<nlohmann::json> frequencies;
 	bool completed = true;
@@ -139,6 +140,12 @@ bool FrameBuffer::BatchSave(const std::vector <std::pair<std::string, int>> &ips
 		this->sensorBuffer[i].shrink_to_fit();
 	}
 	std::string vals = "";
+
+	if (enterComplete == false)
+	{
+		completed = false;
+	}
+
 	for (int i = 0; i < frequencies.size(); i++)
 	{
 		if (i == frequencies.size() - 1)
@@ -171,25 +178,24 @@ bool FrameBuffer::BatchSave(const std::vector <std::pair<std::string, int>> &ips
 		sql::PreparedStatement *prep_stmt;
 		prep_stmt = conn->prepareStatement(sqlIns);
 		//Start at one here to match up expected indexing with prepared statements
-		std::time_t time = 0;
+		std::time_t time = std::chrono::system_clock::to_time_t(this->recievedTime);
 		int stmtPos = 1;
 		for (int i = 0; i < frequencies.size(); i++)
 		{
-			time = frequencies[i].value("time", 0);
 			auto ltm = localtime(&time);
 			std::string sTime = std::to_string(1900 + ltm->tm_year) + "-" + std::to_string(ltm->tm_mon) + "-" + std::to_string(ltm->tm_mday)
 					+ " " + std::to_string(ltm->tm_hour) + ":" + std::to_string(ltm->tm_min) + ":" + std::to_string(ltm->tm_sec);
 			sql::SQLString sqlTime = sTime.c_str();
 			prep_stmt->setDateTime(stmtPos++, sqlTime);
 			prep_stmt->setBoolean(stmtPos++, completed);
-			prep_stmt->setInt(stmtPos++, frequencies[i]["frequency"]);
-			prep_stmt->setInt(stmtPos++, frequencies[i]["reading"]);
-			prep_stmt->setInt(stmtPos++, frequencies[i]["sensor-id"]);
+			prep_stmt->setInt(stmtPos++, frequencies[i]["freq"]);
+			prep_stmt->setInt(stmtPos++, frequencies[i]["read"]);
+			prep_stmt->setInt(stmtPos++, frequencies[i]["id"]);
 		}
 		std::cout << "Frequencies: " << frequencies.size() << "Completed: " << completed << "\n";
 		sql::Statement *stmt = conn->createStatement();
-		stmt->execute("TRUNCATE Live");
-		prep_stmt->execute();
+		//stmt->execute("TRUNCATE Live");
+		//prep_stmt->execute();
 		delete stmt;
 		delete prep_stmt;
 		delete conn;

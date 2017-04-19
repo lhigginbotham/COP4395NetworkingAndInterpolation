@@ -35,7 +35,7 @@ bool addSensorDatabase(const nlohmann::json &message)
 		sql::PreparedStatement *prep_stmt;
 		prep_stmt = conn->prepareStatement("SELECT * FROM Sensors WHERE SID=?");
 		nlohmann::json freq = message["freqs"][0];
-		int sid = freq.value("sensor-id", -1);
+		int sid = freq.value("id", -1);
 		double lat = message["lat"];
 		double longCoord = message["long"];
 		prep_stmt->setInt(1, sid);

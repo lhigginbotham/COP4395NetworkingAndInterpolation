@@ -9,10 +9,9 @@ nlohmann::json InitializeJson(std::string input, std::default_random_engine gene
 
 	std::uniform_int_distribution<int> distribution(900, 1000);
 
-	freq["sensor-id"] = std::stoi(input);
-	freq["frequency"] = 1 + (totalPackets * 5) + frequency;
-	freq["time"] = time;
-	freq["reading"] = rand() % 100;
+	freq["id"] = std::stoi(input);
+	freq["freq"] = 1 + (totalPackets * 15) + frequency;
+	freq["read"] = rand() % 100;
 
 	return freq;
 }
@@ -20,14 +19,13 @@ nlohmann::json InitializeJson(std::string input, std::default_random_engine gene
 std::string Message(std::string input, std::default_random_engine generator, int number, const std::time_t time, int totalPackets)
 {
 	nlohmann::json message;
-	message["number"] = number;
-	message["size"] = 340;
+	message["size"] = 114;
 	message["time"] = time;
 	message["lat"] = 28.599865;
 	message["long"] = -81.169900;
 	std::string m = message.dump();
 	std::vector<nlohmann::json> freqs;
-	for (int i = 0; i < 5; i++)
+	for (int i = 0; i < 15; i++)
 	{
 		freqs.push_back(InitializeJson(input, generator, time, i, totalPackets));
 	}

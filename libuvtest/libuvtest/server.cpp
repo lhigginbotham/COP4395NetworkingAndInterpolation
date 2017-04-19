@@ -80,10 +80,14 @@ void listen(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std
 				ipPosition = ip.second;
 		}
 		auto front = frameBuffer.begin();
-		std::chrono::milliseconds duration(800);
-		std::chrono::milliseconds freqTime = time_tToMilli(freq.value("time", 0));
-		std::chrono::milliseconds lowerBound = pointToMilli(front->recievedTime);
-		std::chrono::milliseconds upperBound = lowerBound + duration;
+		//std::chrono::milliseconds duration(1000);
+		//std::chrono::milliseconds freqTime = time_tToMilli(freq.value("time", 0));
+		//std::chrono::milliseconds lowerBound = pointToMilli(front->recievedTime);
+		//std::chrono::milliseconds upperBound = lowerBound + duration;
+		std::time_t duration = 1;
+		std::time_t freqTime = freq.value("time", 0);
+		std::time_t lowerBound = std::chrono::system_clock::to_time_t(front->recievedTime);
+		std::time_t upperBound = lowerBound + duration;
 		bool sendFuture = false;
 		//Discard
 		if (freqTime < lowerBound)
@@ -97,7 +101,7 @@ void listen(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std
 			{
 				for (int i=0; i<front->sensorBuffer[ipPosition].size(); i++)
 				{
-					if (front->sensorBuffer[ipPosition][i]["freqs"][0]["frequency"] == freq["freqs"][0]["frequency"])
+					if (front->sensorBuffer[ipPosition][i]["freqs"][0]["freq"] == freq["freqs"][0]["freq"])
 					{
 						sendFuture = true;
 					}
@@ -114,16 +118,16 @@ void listen(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std
 			bool inFrame = false, freqFound = false;
 			for (auto &frame : frameBuffer)
 			{
-				if (freqTime < pointToMilli(frame.recievedTime))
+				if (freqTime < std::chrono::system_clock::to_time_t(frame.recievedTime))
 				{
 					inFrame = true;
-					break;
+					return;
 				}
-				if (freqTime >= pointToMilli(frame.recievedTime) && (freqTime < pointToMilli(frame.recievedTime) + duration))
+				if (freqTime >= std::chrono::system_clock::to_time_t(frame.recievedTime) && (freqTime < std::chrono::system_clock::to_time_t(frame.recievedTime) + duration))
 				{
 					for (int i = 0; i < frame.sensorBuffer[ipPosition].size(); i++)
 					{
-						if (frame.sensorBuffer[ipPosition][i]["freqs"][0]["frequency"] == freq["freqs"][0]["frequency"])
+						if (frame.sensorBuffer[ipPosition][i]["freqs"][0]["freq"] == freq["freqs"][0]["freq"])
 						{
 							freqFound = true;
 							break;
@@ -178,7 +182,7 @@ void listen(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std
 			else if (globalConfig.type == 1)
 			{
 				historicalBuffer.push_front(frameBuffer.front());
-				frameBuffer.front().BatchSave(ips, 0);
+				frameBuffer.front().BatchSave(ips, 0, true);
 				if (historicalBuffer.size() > 10)
 				{
 					historicalBuffer.pop_back();
@@ -197,12 +201,12 @@ void timer(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std:
 	std::chrono::milliseconds duration;
 	if (globalConfig.type == 0)
 	{
-		std::chrono::milliseconds duration(2000);
+		std::chrono::milliseconds duration(10000);
 		timer->start(duration, duration);
 	}
 	else
 	{
-		std::chrono::milliseconds duration(3000);
+		std::chrono::milliseconds duration(5000);
 		timer->start(duration, duration);
 	}
 	std::shared_ptr<uvw::UDPHandle> udp = loop.resource<uvw::UDPHandle>();
@@ -223,11 +227,13 @@ void timer(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std:
 		int posTracker = 0;
 		for (int i = 0; i < numOfTransmits; i++)
 		{
-			for (auto &j : frameBuffer.front().sensorBuffer)
+			for (auto &sensor : frameBuffer.front().sensorBuffer)
 			{
-				if (j.empty() || j.size() > j.front().value("size", 0))
+				auto test = sensor.front();
+				int size = test.value("size", 0);
+				if (sensor.empty() || sensor.size() > sensor.front().value("size", 0))
 				{
-					if (j.empty())
+					if (sensor.empty())
 					{
 						std::string ip = ips[posTracker].first;
 						misses.find(ip)->second++;
@@ -243,11 +249,12 @@ void timer(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std:
 			}
 			if (globalConfig.type == 1)
 			{
-				//historicalBuffer.push_front(frameBuffer.front());
-				//if (historicalBuffer.size() > 10)
-				//{
-				//	historicalBuffer.pop_back();
-				//}
+				historicalBuffer.push_front(frameBuffer.front());
+				if (historicalBuffer.size() > 10)
+				{
+					historicalBuffer.pop_back();
+				}
+				frameBuffer.front().BatchSave(ips, 1, complete);
 			}
 			frameBuffer.pop_front();
 		}
@@ -295,6 +302,7 @@ void timer(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std:
 				}
 			}
 		}
+		std::cout << "Exiting timer\n";
 	});
 	
 }
@@ -326,13 +334,13 @@ void dbSave(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips)
 			}
 			if (!completed)
 			{
-				hFrame.BatchSave(ips, 1);
+				hFrame.BatchSave(ips, 1, completed);
 				break;
 			}
 		}
 		if (!historicalBuffer.empty())
 		{
-			historicalBuffer.front().BatchSave(ips, 1);
+			historicalBuffer.front().BatchSave(ips, 1, completed);
 		}
 		historicalBuffer.clear();
 	});

@@ -18,7 +18,7 @@ class FrameBuffer
 public:
 	FrameBuffer(std::chrono::time_point<std::chrono::system_clock> time);
 	~FrameBuffer() = default;
-	bool BatchSave(const std::vector <std::pair<std::string, int>> &ips, const int place);
+	bool BatchSave(const std::vector <std::pair<std::string, int>> &ips, const int place, bool enterComplete);
 	bool LifetimeExceeded();
 	void Transmit(bool complete, const std::vector <std::pair<std::string, int>> &ips, const nlohmann::json &freq, uvw::UDPHandle &udp);
 	void Transmit(bool complete, const std::vector <std::pair<std::string, int>> &ips, std::shared_ptr<uvw::UDPHandle> udp);

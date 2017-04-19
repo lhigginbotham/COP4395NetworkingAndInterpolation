@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
 		{
 			continue;
 		}
-		for (int i = 0; i < 340; i++)
+		for (int i = 0; i < 114; i++)
 		{
 			std::string t = Message(argv[2], generator, num, time, i);
 			nlohmann::json freq = nlohmann::json::parse(t.c_str());
