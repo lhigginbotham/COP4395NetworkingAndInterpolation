@@ -198,7 +198,18 @@ void timer(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std:
 				posTracker++;
 				activeTracker++;
 			}
-			frameBuffer.front().Transmit(complete, ips, udp);
+			if (globalConfig.type == 0)
+			{
+				frameBuffer.front().Transmit(complete, ips, udp);
+			}
+			else
+			{
+				historicalBuffer.push_front(frameBuffer.front());
+				if (historicalBuffer.size() > 10)
+				{
+					historicalBuffer.pop_back();
+				}
+			}
 			frameBuffer.pop_front();
 			posTracker = 0;
 		}
