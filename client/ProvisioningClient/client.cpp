@@ -119,6 +119,11 @@ int main(int argc, char *argv[])
 	int num = 0;
 	std::time_t previousTime = 0;
 	while (true) {
+		if (i < 100000000)
+		{
+			i++;
+			continue;
+		}
 		if (num > 10)
 			num = 0;
 		std::chrono::time_point<std::chrono::system_clock> times = std::chrono::system_clock::now();
@@ -127,7 +132,7 @@ int main(int argc, char *argv[])
 		{
 			continue;
 		}
-		for (int i = 0; i < 114; i++)
+		for (int i = 0; i < 15; i++)
 		{
 			std::string t = Message(argv[2], generator, num, time, i);
 			nlohmann::json freq = nlohmann::json::parse(t.c_str());

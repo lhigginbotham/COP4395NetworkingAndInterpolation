@@ -19,7 +19,7 @@ nlohmann::json InitializeJson(std::string input, std::default_random_engine gene
 std::string Message(std::string input, std::default_random_engine generator, int number, const std::time_t time, int totalPackets)
 {
 	nlohmann::json message;
-	message["size"] = 114;
+	message["size"] = 15;
 	message["time"] = time;
 	message["lat"] = 28.599865;
 	message["long"] = -81.169900;

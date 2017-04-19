@@ -191,7 +191,8 @@ bool FrameBuffer::BatchSave(const std::vector <std::pair<std::string, int>> &ips
 		}
 		sql::Statement *stmt = conn->createStatement();
 		stmt->execute("TRUNCATE Live");
-		//prep_stmt->execute();
+		prep_stmt->execute();
+		std::cout << "Frequencies: " << frequencies.size() << " Completed: " << completed << "\n";
 		delete prep_stmt;
 		delete conn;
 		return true;
@@ -201,7 +202,6 @@ bool FrameBuffer::BatchSave(const std::vector <std::pair<std::string, int>> &ips
 		std::cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << "\n";
 		std::cout << "# ERR: " << e.what();
 		std::cout << " (MySQL error code: " << e.getErrorCode();
-		std::cout << ", SQLState: " << e.getSQLState() << " )\n";
 	}
 	return false;
 }
