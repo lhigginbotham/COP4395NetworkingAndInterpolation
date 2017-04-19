@@ -148,13 +148,12 @@ void listen(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std
 			}
 			else if (globalConfig.type == 1)
 			{
-				std::cout << "Allocating frame buffer\n";
-				historicalBuffer.push_front(frameBuffer.front());
+				//historicalBuffer.push_front(frameBuffer.front());
 				frameBuffer.front().BatchSave(ips, 0);
-				if (historicalBuffer.size() > 10)
-				{
-					historicalBuffer.pop_back();
-				}
+				//if (historicalBuffer.size() > 10)
+				//{
+				//	historicalBuffer.pop_back();
+				//}
 				frameBuffer.pop_front();
 			}
 		}

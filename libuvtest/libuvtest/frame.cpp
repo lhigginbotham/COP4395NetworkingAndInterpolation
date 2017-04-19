@@ -152,7 +152,7 @@ bool FrameBuffer::BatchSave(const std::vector <std::pair<std::string, int>> &ips
 	std::string ins = "";
 	bool standardSave = true;
 	int comparator = std::chrono::system_clock::to_time_t(recievedTime) - lastSave; 
-	if (comparator > 15)
+	if (comparator > 360)
 	{
 		lastSave = std::chrono::system_clock::to_time_t(recievedTime);
 		standardSave = false;
