@@ -86,7 +86,7 @@ void FrameBuffer::Transmit(bool complete, const std::vector <std::pair<std::stri
 	//TODO Implement filtering
 
 	std::vector<nlohmann::json> freq;
-	int totalSize = (frequencies.size() + (5 - 1)) / 5;
+	int totalSize = (frequencies.size() + (15 - 1)) / 15;
 	std::cout << "Total Size: " << totalSize << "\n";
 	while (!frequencies.empty())
 	{

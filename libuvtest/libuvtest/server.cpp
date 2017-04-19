@@ -95,7 +95,7 @@ void listen(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std
 			return;
 		}
 		//Place in current frame
-		else if (freqTime >= lowerBound && (freqTime < upperBound))
+		else if (freqTime >= lowerBound && (freqTime <= upperBound))
 		{
 			if (!front->sensorBuffer[ipPosition].empty())
 			{
@@ -107,13 +107,19 @@ void listen(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std
 					}
 				}
 			}
+			int size = front->sensorBuffer[ipPosition].size();
+			//if (front->sensorBuffer[ipPosition].size() >= freq.value("size", 0))
+			//{
+			//	sendFuture = true;
+			//}
+
 			if (!sendFuture)
 			{
 				front->sensorBuffer[ipPosition].push_back(freq);
 			}
 		}
 		//Place in future frame that can hold it
-		else if(freqTime >= upperBound || sendFuture)
+		else if(freqTime > upperBound || sendFuture)
 		{
 			bool inFrame = false, freqFound = false;
 			for (auto &frame : frameBuffer)
@@ -133,6 +139,10 @@ void listen(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std
 							break;
 						}
 					}
+					//if (frame.sensorBuffer[ipPosition].size() >= freq.value("size", 0))
+					//{
+					//	freqFound = true;
+					//}
 					if (freqFound)
 					{
 						continue;
@@ -212,6 +222,7 @@ void timer(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std:
 	std::shared_ptr<uvw::UDPHandle> udp = loop.resource<uvw::UDPHandle>();
 
 	timer->on<uvw::TimerEvent>([&ips, &misses, udp](const uvw::TimerEvent &, uvw::TimerHandle &timer) {
+		std::cout << "Entering Timer\n";
 		std::chrono::milliseconds currentTime = pointToMilli(std::chrono::system_clock::now());
 		std::chrono::milliseconds duration(1000);
 		unsigned int numOfTransmits = 0;
@@ -229,8 +240,6 @@ void timer(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std:
 		{
 			for (auto &sensor : frameBuffer.front().sensorBuffer)
 			{
-				auto test = sensor.front();
-				int size = test.value("size", 0);
 				if (sensor.empty() || sensor.size() > sensor.front().value("size", 0))
 				{
 					if (sensor.empty())
