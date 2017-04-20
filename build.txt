@@ -1,0 +1,14 @@
+g++ -std=c++14 -I /home/lhigginbotham/Documents/ -I /home/lhigginbotham/Documents/uvw-master/src/ -I /usr/local/include/ -pthread config.cpp frame.cpp utilities.cpp server.cpp -o server.o /usr/local/lib/libuv.a -lmysqlcppconn
+
+
+
+sudo apt install build-essential libtool
+sudo apt install automake
+sudo apt install libmysqlcppconn-dev
+
+Build libuv
+sh autogen.sh
+./configure
+make
+make check
+make install

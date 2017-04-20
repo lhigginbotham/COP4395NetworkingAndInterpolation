@@ -36,6 +36,8 @@
 #pragma comment( lib, "Ws2_32.lib")
 #endif
 
+#include <json.hpp>
+
 bool InitializeSockets()
 {
 #if PLATFORM == PLATFORM_WINDOWS
@@ -48,6 +50,15 @@ bool InitializeSockets()
 #endif
 }
 
+int CloseSocket(int socketfd)
+{
+#if PLATFORM == PLATFORM_WINDOWS
+	return closesocket(socketfd);
+#else
+	return close(socketfd);
+#endif
+}
+
 void ShutdownSockets()
 {
 #if PLATFORM == PLATFORM_WINDOWS
@@ -57,6 +68,7 @@ void ShutdownSockets()
 
 #include <iostream>
 #include <string.h>
+#include "frequency.hpp"
 
 #define SERVERPORT "4951"    // the port users will be connecting to
 
@@ -102,17 +114,46 @@ int main(int argc, char *argv[])
 		return 2;
 	}
 
-	if ((numbytes = sendto(sockfd, argv[2], strlen(argv[2]), 0,
-		p->ai_addr, p->ai_addrlen)) == -1) {
-		perror("talker: sendto");
-		ShutdownSockets();
-		exit(1);
+	std::default_random_engine generator;
+	unsigned long int i = 0;
+	int num = 0;
+	std::time_t previousTime = 0;
+	while (true) {
+		if (i < 100000000)
+		{
+			i++;
+			continue;
+		}
+		if (num > 10)
+			num = 0;
+		std::chrono::time_point<std::chrono::system_clock> times = std::chrono::system_clock::now();
+		std::time_t time = std::chrono::system_clock::to_time_t(times);
+		if (previousTime >= time)
+		{
+			continue;
+		}
+		for (int i = 0; i < 15; i++)
+		{
+			std::string t = Message(argv[2], generator, num, time, i);
+			nlohmann::json freq = nlohmann::json::parse(t.c_str());
+			std::string s = freq.dump();
+			std::cout << "Out: " << freq.dump() << "\n";
+			const char* spoint = s.c_str();
+			if ((numbytes = sendto(sockfd, spoint, strlen(spoint), 0,
+				p->ai_addr, p->ai_addrlen)) == -1) {
+				perror("talker: sendto");
+				ShutdownSockets();
+				exit(1);
+			}
+		}
+		i = 0;
+		num++;
+		previousTime = time;
 	}
-
 	freeaddrinfo(servinfo);
 
 	printf("talker: sent %d bytes to %s\n", numbytes, argv[1]);
-	closesocket(sockfd);
+	CloseSocket(sockfd);
 
 	ShutdownSockets();
 
