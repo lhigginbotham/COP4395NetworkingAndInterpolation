@@ -38,7 +38,7 @@ void FrameBuffer::Transmit(bool complete, const std::vector <std::pair<std::stri
 
 	while (!frequencies.empty())
 	{
-		for (int i = 0; i < 5; i++)
+		for (int i = 0; i < 15; i++)
 		{
 			if (frequencies.empty())
 				break;
@@ -92,7 +92,7 @@ void FrameBuffer::Transmit(bool complete, const std::vector <std::pair<std::stri
 
 	while (!frequencies.empty())
 	{
-		for (int i = 0; i < 5; i++)
+		for (int i = 0; i < 15; i++)
 		{
 			if (frequencies.empty())
 				break;
