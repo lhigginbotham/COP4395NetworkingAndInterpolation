@@ -44,7 +44,8 @@ bool ConfigStore::ValidateConfig(const nlohmann::json &config)
 				valid = false;
 				break;
 			}
-			if (config.value("interval", -1) < 0 || config.value("freqlow", -1) < 0 || config.value("freqhigh", -1) < 0)
+			if (config.value("interval", -1) < 0 || config.value("freqlow", -1) < 0 || config.value("freqhigh", -1) < 0 || 
+				config.value("listenport", -1) < 0  || config.value("transmitport", -1) < 0)
 			{
 				valid = false;
 				break;
@@ -59,7 +60,7 @@ bool ConfigStore::ValidateConfig(const nlohmann::json &config)
 				break;
 			}
 			if (config.value("interval", -1) < 0 || config.value("freqlow", -1) < 0 || config.value("freqhigh", -1) < 0
-				|| config.value("databasePort", -1) < 0)
+				|| config.value("listenport", -1) < 0 || config.value("databasePort", -1) < 0)
 			{
 				valid = false;
 				break;

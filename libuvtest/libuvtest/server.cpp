@@ -18,7 +18,7 @@ std::time_t lastSave = 0;
 
 void listen(uvw::Loop &loop, std::vector <std::pair<std::string, int>> &ips, std::map<std::string, int> &misses) {
 	std::shared_ptr<uvw::UDPHandle> udp = loop.resource<uvw::UDPHandle>();
-	udp->bind("0.0.0.0", 4951);
+	udp->bind("0.0.0.0", globalConfig.config["listenport"]);
 	udp->recv();
 	int cPosition = 0;
 

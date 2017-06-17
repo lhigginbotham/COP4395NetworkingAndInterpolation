@@ -52,7 +52,7 @@ void FrameBuffer::Transmit(bool complete, const std::vector <std::pair<std::stri
 		alteredMessage["time"] = currentTime;
 		std::string message = alteredMessage.dump();
 		std::string ip = globalConfig.config.value("sendip", "-1");
-		unsigned int port = 4951;
+		unsigned int port = globalConfig.config["transmitport"];
 		//send won't take message.c_str()
 		auto testData = std::make_unique<char[]>(512);
 		for (int i = 0; i < message.length(); i++)
@@ -106,7 +106,7 @@ void FrameBuffer::Transmit(bool complete, const std::vector <std::pair<std::stri
 		alteredMessage["time"] = currentTime;
 		std::string message = alteredMessage.dump();
 		std::string ip = globalConfig.config.value("sendip", "-1");
-		unsigned int port = 4951;
+		unsigned int port = globalConfig.config["transmitport"];
 		//send won't take message.c_str()
 		auto testData = std::make_unique<char[]>(512);
 		for (int i = 0; i < message.length(); i++)
