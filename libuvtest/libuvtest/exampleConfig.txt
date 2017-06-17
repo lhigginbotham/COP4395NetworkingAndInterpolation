@@ -1,0 +1,10 @@
+{
+  "type": 0,
+  "listenport": 4951,
+  "transmitport": 4952,
+  "sendip": "192.168.1.1",
+  "databaseIP": "192.168.1.3",
+  "databasePort": 3306,
+  "databaseUsername": "username",
+  "databasePassword": "password"
+}
